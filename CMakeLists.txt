@@ -13,11 +13,13 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 #     - src/driver/main.cpp     : Entry point; argc/argv parsing
 #     - src/driver/pipeline.cpp : Compilation pipeline (stub stages)
 #     - src/lexer/token.cpp     : Token type name helper (Day 4)
+#     - src/lexer/lexer.cpp     : Lexer: identifier/keyword scanning (Day 5)
 # -----------------------------------------------------------------------------
 add_executable(cforge
     src/driver/main.cpp
     src/driver/pipeline.cpp
     src/lexer/token.cpp
+    src/lexer/lexer.cpp
 )
 
 # -----------------------------------------------------------------------------
@@ -26,8 +28,10 @@ add_executable(cforge
 #     - tests/test_main.cpp    : Catch2 runner entry point + sanity check (Day 2)
 #     - tests/test_driver.cpp  : Driver + pipeline unit tests (Day 3)
 #     - tests/test_token.cpp   : Token / TokenType unit tests (Day 4)
+#     - tests/test_lexer.cpp   : Lexer identifier/keyword tests (Day 5)
 #     - src/driver/pipeline.cpp: Shared with cforge target; main.cpp excluded
 #     - src/lexer/token.cpp    : Shared with cforge target
+#     - src/lexer/lexer.cpp    : Shared with cforge target
 # -----------------------------------------------------------------------------
 enable_testing()
 include(CTest)
@@ -44,8 +48,10 @@ add_executable(cforge_tests
     tests/test_main.cpp
     tests/test_driver.cpp
     tests/test_token.cpp
+    tests/test_lexer.cpp
     src/driver/pipeline.cpp
     src/lexer/token.cpp
+    src/lexer/lexer.cpp
 )
 target_link_libraries(cforge_tests PRIVATE Catch2::Catch2)
 
