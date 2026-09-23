@@ -6,14 +6,15 @@
 #include <vector>
 
 // =============================================================================
-// Lexer — Day 5
+// Lexer — Day 5 / Day 6
 // =============================================================================
 //
 // Converts a C source string into a sequence of Tokens.
 //
-// Day 5 scope: identifier and keyword scanning only.
-// Future days will add: integers, floats, strings, chars, operators,
-// punctuation, comments, and preprocessor directives.
+// Day 5 scope: identifier and keyword scanning.
+// Day 6 scope: integer and floating-point literal scanning.
+// Future days will add: strings, chars, operators, punctuation, comments,
+// and preprocessor directives.
 //
 // Usage:
 //   Lexer lexer(sourceCode);
@@ -61,11 +62,26 @@ private:
     // Updates line/column tracking as newlines are consumed.
     void skipWhitespace();
 
+    // Return the character ONE position ahead of the current cursor.
+    // Returns '\0' if past end. Does not advance the cursor.
+    // Used to detect two-character prefixes like '0x' and '0X'.
+    char peekNext() const;
+
     // Scan a complete identifier-or-keyword token.
     // Pre-condition: peek() is a letter or underscore.
     // Collects all subsequent letters, digits, and underscores.
     // Performs keyword-table lookup to determine the final TokenType.
     Token scanIdentifierOrKeyword();
+
+    // Scan a complete numeric literal (integer or float) token.
+    // Pre-condition: peek() is a decimal digit '0'-'9'.
+    // Handles:
+    //   - Hexadecimal integers:  0x / 0X prefix followed by hex digits
+    //   - Decimal integers:      one or more digits
+    //   - Decimal floats:        digits . digits
+    //   - Exponent floats:       digits [. digits] e/E [+/-] digits
+    // Returns TokenType::Integer or TokenType::Float.
+    Token scanNumericLiteral();
 };
 
 // =============================================================================

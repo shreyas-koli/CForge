@@ -78,6 +78,21 @@ char Lexer::peek() const {
 }
 
 // =============================================================================
+// peekNext()
+// =============================================================================
+//
+// Returns the character ONE position ahead of the current cursor.
+// Returns '\0' if that position is at or past the end.
+// Does not advance the cursor.
+// Used to detect two-character sequences without consuming them:
+//   - '0' followed by 'x' or 'X' -> hexadecimal literal prefix
+//
+char Lexer::peekNext() const {
+    if (m_pos + 1 >= m_source.size()) return '\0';
+    return m_source[m_pos + 1];
+}
+
+// =============================================================================
 // advance()
 // =============================================================================
 //
@@ -168,13 +183,120 @@ Token Lexer::scanIdentifierOrKeyword() {
 }
 
 // =============================================================================
+// scanNumericLiteral()  — Day 6
+// =============================================================================
+//
+// Pre-condition: peek() is a decimal digit '0'-'9'.
+//
+// Algorithm:
+//   1. Record start position and source location.
+//   2. If the first digit is '0' AND next char is 'x'/'X':
+//        -> Hexadecimal path: consume '0x' then hex digits [0-9 a-f A-F].
+//        -> Result is always Integer (hex floats are not standard C89/C90).
+//   3. Otherwise (decimal path):
+//        a. Consume all leading decimal digits.
+//        b. If next char is '.' : consume '.', consume following digits,
+//           set isFloat = true.
+//        c. If next char is 'e'/'E': consume exponent marker, consume
+//           optional '+'/'-' sign, consume exponent digits.
+//           set isFloat = true.
+//           If no digits follow the exponent marker, the literal is still
+//           emitted as-scanned (minimal error recovery: no crash).
+//   4. Extract lexeme from source substring (no char-by-char construction).
+//   5. Return Token with Integer or Float type.
+//
+// Note: std::stoi / std::stod are NOT used here. The lexer only scans
+// characters to build the textual lexeme; numeric conversion happens later
+// in the semantic analysis phase.
+//
+Token Lexer::scanNumericLiteral() {
+    int startLine   = m_line;
+    int startColumn = m_column;
+    std::size_t startPos = m_pos;
+
+    bool isFloat = false;
+
+    // ------------------------------------------------------------------
+    // Hexadecimal path: 0x / 0X
+    // ------------------------------------------------------------------
+    if (peek() == '0' &&
+        (peekNext() == 'x' || peekNext() == 'X')) {
+
+        advance(); // consume '0'
+        advance(); // consume 'x' or 'X'
+
+        // Consume hex digits: 0-9, a-f, A-F
+        while (!isAtEnd()) {
+            char c = peek();
+            if (std::isdigit(static_cast<unsigned char>(c)) ||
+                (c >= 'a' && c <= 'f') ||
+                (c >= 'A' && c <= 'F')) {
+                advance();
+            } else {
+                break;
+            }
+        }
+
+        std::string lexeme = m_source.substr(startPos, m_pos - startPos);
+        return Token{TokenType::Integer, lexeme, startLine, startColumn};
+    }
+
+    // ------------------------------------------------------------------
+    // Decimal path: one or more decimal digits
+    // ------------------------------------------------------------------
+
+    // Consume all leading decimal digits.
+    while (!isAtEnd() && std::isdigit(static_cast<unsigned char>(peek()))) {
+        advance();
+    }
+
+    // Detect decimal point -> float
+    // Guard: '.' must be followed by a digit to avoid consuming the '.' in
+    // member-access expressions (e.g. obj.field) if the number appears right
+    // before one. For the Day 6 scope, the simpler rule "consume '.' if
+    // the next char is a digit" is used; this is sufficient for all Day 6
+    // test cases and standard numeric literals.
+    if (peek() == '.' && std::isdigit(static_cast<unsigned char>(peekNext()))) {
+        isFloat = true;
+        advance(); // consume '.'
+        // Consume fractional digits.
+        while (!isAtEnd() && std::isdigit(static_cast<unsigned char>(peek()))) {
+            advance();
+        }
+    }
+
+    // Detect exponent marker e/E -> float
+    if (peek() == 'e' || peek() == 'E') {
+        isFloat = true;
+        advance(); // consume 'e' or 'E'
+
+        // Optional sign.
+        if (peek() == '+' || peek() == '-') {
+            advance();
+        }
+
+        // Exponent digits. If none are present the lexeme is still emitted
+        // as-scanned (no crash; a later phase can report the parse error).
+        while (!isAtEnd() && std::isdigit(static_cast<unsigned char>(peek()))) {
+            advance();
+        }
+    }
+
+    std::string lexeme = m_source.substr(startPos, m_pos - startPos);
+    TokenType   type   = isFloat ? TokenType::Float : TokenType::Integer;
+    return Token{type, lexeme, startLine, startColumn};
+}
+
+// =============================================================================
 // nextToken()
 // =============================================================================
 //
 // Returns the next token from the source.
-// Day 5 handles: whitespace (skip), identifiers, keywords, and end-of-file.
-// Unknown characters are skipped with a warning to avoid crashing tests
-// that include punctuation like ';' for realistic source snippets.
+// Day 5: whitespace, identifiers, keywords, end-of-file.
+// Day 6: numeric literals (integer and float).
+// Unknown characters fall through to a single-character Punctuation token
+// so that realistic snippets (e.g. containing ';' or '=') don't block tests.
+// Later days will replace the fallthrough branch with proper scanning.
 //
 Token Lexer::nextToken() {
     skipWhitespace();
@@ -190,10 +312,15 @@ Token Lexer::nextToken() {
         return scanIdentifierOrKeyword();
     }
 
-    // --- Unknown character (Day 5: skip, to allow realistic test snippets) ---
-    // Later days will replace this branch with proper operator/punctuation/
-    // number scanning. For now, we advance past unknown characters silently
-    // so that a snippet like "int counter;" doesn't block the test.
+    // --- Numeric literal (integer or float) --- Day 6
+    if (std::isdigit(static_cast<unsigned char>(c))) {
+        return scanNumericLiteral();
+    }
+
+    // --- Unknown / punctuation fallthrough ---
+    // Single-character catch-all until operators and punctuation are
+    // implemented in a later day. Emits a Punctuation token so that
+    // realistic snippets like "int x = 123;" remain testable.
     int unknownLine   = m_line;
     int unknownColumn = m_column;
     advance();

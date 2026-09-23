@@ -334,3 +334,318 @@ TEST_CASE("'return counter' produces Keyword then Identifier", "[lexer][sequence
 
     CHECK(tokens.back().type == TokenType::Eof);
 }
+
+// =============================================================================
+// DAY 6 TESTS — Numeric Literals
+// =============================================================================
+
+// -----------------------------------------------------------------------------
+// Decimal integers
+// -----------------------------------------------------------------------------
+
+TEST_CASE("Integer: 0", "[lexer][numeric][integer]") {
+    Token t = lexFirst("0");
+    CHECK(t.type   == TokenType::Integer);
+    CHECK(t.lexeme == "0");
+}
+
+TEST_CASE("Integer: 10", "[lexer][numeric][integer]") {
+    Token t = lexFirst("10");
+    CHECK(t.type   == TokenType::Integer);
+    CHECK(t.lexeme == "10");
+}
+
+TEST_CASE("Integer: 123", "[lexer][numeric][integer]") {
+    Token t = lexFirst("123");
+    CHECK(t.type   == TokenType::Integer);
+    CHECK(t.lexeme == "123");
+}
+
+TEST_CASE("Integer: 42", "[lexer][numeric][integer]") {
+    Token t = lexFirst("42");
+    CHECK(t.type   == TokenType::Integer);
+    CHECK(t.lexeme == "42");
+}
+
+TEST_CASE("Integer: large value 99999", "[lexer][numeric][integer]") {
+    Token t = lexFirst("99999");
+    CHECK(t.type   == TokenType::Integer);
+    CHECK(t.lexeme == "99999");
+}
+
+// -----------------------------------------------------------------------------
+// Hexadecimal integers
+// -----------------------------------------------------------------------------
+
+TEST_CASE("Integer hex: 0xFF", "[lexer][numeric][integer][hex]") {
+    Token t = lexFirst("0xFF");
+    CHECK(t.type   == TokenType::Integer);
+    CHECK(t.lexeme == "0xFF");
+}
+
+TEST_CASE("Integer hex: 0xff (lowercase)", "[lexer][numeric][integer][hex]") {
+    Token t = lexFirst("0xff");
+    CHECK(t.type   == TokenType::Integer);
+    CHECK(t.lexeme == "0xff");
+}
+
+TEST_CASE("Integer hex: 0X10 (uppercase X)", "[lexer][numeric][integer][hex]") {
+    Token t = lexFirst("0X10");
+    CHECK(t.type   == TokenType::Integer);
+    CHECK(t.lexeme == "0X10");
+}
+
+TEST_CASE("Integer hex: 0xabcdef", "[lexer][numeric][integer][hex]") {
+    Token t = lexFirst("0xabcdef");
+    CHECK(t.type   == TokenType::Integer);
+    CHECK(t.lexeme == "0xabcdef");
+}
+
+TEST_CASE("Integer hex: 0XCAFE", "[lexer][numeric][integer][hex]") {
+    Token t = lexFirst("0XCAFE");
+    CHECK(t.type   == TokenType::Integer);
+    CHECK(t.lexeme == "0XCAFE");
+}
+
+TEST_CASE("Integer hex: 0x0 (zero in hex)", "[lexer][numeric][integer][hex]") {
+    Token t = lexFirst("0x0");
+    CHECK(t.type   == TokenType::Integer);
+    CHECK(t.lexeme == "0x0");
+}
+
+// -----------------------------------------------------------------------------
+// Decimal floats (decimal point)
+// -----------------------------------------------------------------------------
+
+TEST_CASE("Float: 3.14", "[lexer][numeric][float]") {
+    Token t = lexFirst("3.14");
+    CHECK(t.type   == TokenType::Float);
+    CHECK(t.lexeme == "3.14");
+}
+
+TEST_CASE("Float: 0.5", "[lexer][numeric][float]") {
+    Token t = lexFirst("0.5");
+    CHECK(t.type   == TokenType::Float);
+    CHECK(t.lexeme == "0.5");
+}
+
+TEST_CASE("Float: 10.0", "[lexer][numeric][float]") {
+    Token t = lexFirst("10.0");
+    CHECK(t.type   == TokenType::Float);
+    CHECK(t.lexeme == "10.0");
+}
+
+TEST_CASE("Float: 123.456", "[lexer][numeric][float]") {
+    Token t = lexFirst("123.456");
+    CHECK(t.type   == TokenType::Float);
+    CHECK(t.lexeme == "123.456");
+}
+
+// -----------------------------------------------------------------------------
+// Exponent floats
+// -----------------------------------------------------------------------------
+
+TEST_CASE("Float exponent: 1e10", "[lexer][numeric][float][exponent]") {
+    Token t = lexFirst("1e10");
+    CHECK(t.type   == TokenType::Float);
+    CHECK(t.lexeme == "1e10");
+}
+
+TEST_CASE("Float exponent: 1E10 (uppercase E)", "[lexer][numeric][float][exponent]") {
+    Token t = lexFirst("1E10");
+    CHECK(t.type   == TokenType::Float);
+    CHECK(t.lexeme == "1E10");
+}
+
+TEST_CASE("Float exponent: 3.14e5", "[lexer][numeric][float][exponent]") {
+    Token t = lexFirst("3.14e5");
+    CHECK(t.type   == TokenType::Float);
+    CHECK(t.lexeme == "3.14e5");
+}
+
+TEST_CASE("Float exponent: 3.14E5 (uppercase E)", "[lexer][numeric][float][exponent]") {
+    Token t = lexFirst("3.14E5");
+    CHECK(t.type   == TokenType::Float);
+    CHECK(t.lexeme == "3.14E5");
+}
+
+TEST_CASE("Float exponent with negative sign: 2.5e-3", "[lexer][numeric][float][exponent]") {
+    Token t = lexFirst("2.5e-3");
+    CHECK(t.type   == TokenType::Float);
+    CHECK(t.lexeme == "2.5e-3");
+}
+
+TEST_CASE("Float exponent with positive sign: 2.5e+3", "[lexer][numeric][float][exponent]") {
+    Token t = lexFirst("2.5e+3");
+    CHECK(t.type   == TokenType::Float);
+    CHECK(t.lexeme == "2.5e+3");
+}
+
+TEST_CASE("Float exponent: integer base with exponent 1e10", "[lexer][numeric][float][exponent]") {
+    // No decimal point, but has exponent -> Float
+    Token t = lexFirst("1e10");
+    CHECK(t.type   == TokenType::Float);
+}
+
+// -----------------------------------------------------------------------------
+// INTEGER vs FLOAT distinction — critical cases
+// -----------------------------------------------------------------------------
+
+TEST_CASE("'123' is Integer, '123.0' is Float", "[lexer][numeric][boundary]") {
+    CHECK(lexFirst("123").type  == TokenType::Integer);
+    CHECK(lexFirst("123.0").type == TokenType::Float);
+}
+
+TEST_CASE("'0' is Integer, '0.5' is Float", "[lexer][numeric][boundary]") {
+    CHECK(lexFirst("0").type   == TokenType::Integer);
+    CHECK(lexFirst("0.5").type == TokenType::Float);
+}
+
+TEST_CASE("'0xFF' is Integer (hex never becomes float)", "[lexer][numeric][boundary]") {
+    CHECK(lexFirst("0xFF").type == TokenType::Integer);
+    CHECK(lexFirst("0XFF").type == TokenType::Integer);
+}
+
+// -----------------------------------------------------------------------------
+// Critical: '3.14' must be ONE Float token, NOT three tokens
+// -----------------------------------------------------------------------------
+
+TEST_CASE("'3.14' is a single Float token, not split into 3/./14", "[lexer][numeric][boundary]") {
+    auto tokens = lex("3.14");
+    // Should be: Float("3.14"), Eof
+    REQUIRE(tokens.size() == 2);
+    CHECK(tokens[0].type   == TokenType::Float);
+    CHECK(tokens[0].lexeme == "3.14");
+    CHECK(tokens[1].type   == TokenType::Eof);
+}
+
+// -----------------------------------------------------------------------------
+// Lexeme preservation — exact source text stored, no conversion
+// -----------------------------------------------------------------------------
+
+TEST_CASE("Numeric lexemes preserve exact source text", "[lexer][numeric][lexeme]") {
+    CHECK(lexFirst("123").lexeme    == "123");
+    CHECK(lexFirst("0xFF").lexeme   == "0xFF");
+    CHECK(lexFirst("3.14").lexeme   == "3.14");
+    CHECK(lexFirst("2.5e-3").lexeme == "2.5e-3");
+    CHECK(lexFirst("1E10").lexeme   == "1E10");
+    CHECK(lexFirst("0.5").lexeme    == "0.5");
+}
+
+// -----------------------------------------------------------------------------
+// Location tracking for numeric tokens
+// -----------------------------------------------------------------------------
+
+TEST_CASE("Numeric token at start has line=1, column=1", "[lexer][numeric][location]") {
+    Token t = lexFirst("42");
+    CHECK(t.line   == 1);
+    CHECK(t.column == 1);
+}
+
+TEST_CASE("Numeric token after spaces has correct column", "[lexer][numeric][location]") {
+    // "   123" -> 3 spaces, then '1' at column 4
+    Token t = lexFirst("   123");
+    CHECK(t.type   == TokenType::Integer);
+    CHECK(t.lexeme == "123");
+    CHECK(t.line   == 1);
+    CHECK(t.column == 4);
+}
+
+TEST_CASE("Numeric token on second line has correct line number", "[lexer][numeric][location]") {
+    // "x\n42" -> identifier on line 1, integer on line 2
+    auto tokens = lex("x\n42");
+    REQUIRE(tokens.size() >= 2);
+    CHECK(tokens[0].line == 1);
+    CHECK(tokens[1].type == TokenType::Integer);
+    CHECK(tokens[1].line == 2);
+    CHECK(tokens[1].column == 1);
+}
+
+// -----------------------------------------------------------------------------
+// Realistic source snippets
+// -----------------------------------------------------------------------------
+
+TEST_CASE("'int x = 123;' produces Keyword Identifier Punct Integer Punct Eof",
+          "[lexer][numeric][sequence]") {
+    auto tokens = lex("int x = 123;");
+    // Expected types: Keyword, Identifier, Punct('='), Integer, Punct(';'), Eof
+    REQUIRE(tokens.size() >= 5);
+
+    CHECK(tokens[0].type   == TokenType::Keyword);
+    CHECK(tokens[0].lexeme == "int");
+
+    CHECK(tokens[1].type   == TokenType::Identifier);
+    CHECK(tokens[1].lexeme == "x");
+
+    // tokens[2] is '=' (Punctuation fallthrough)
+
+    CHECK(tokens[3].type   == TokenType::Integer);
+    CHECK(tokens[3].lexeme == "123");
+
+    CHECK(tokens.back().type == TokenType::Eof);
+}
+
+TEST_CASE("'float value = 3.14;' produces Keyword Identifier Punct Float Punct Eof",
+          "[lexer][numeric][sequence]") {
+    auto tokens = lex("float value = 3.14;");
+    REQUIRE(tokens.size() >= 5);
+
+    CHECK(tokens[0].type   == TokenType::Keyword);
+    CHECK(tokens[0].lexeme == "float");
+
+    CHECK(tokens[1].type   == TokenType::Identifier);
+    CHECK(tokens[1].lexeme == "value");
+
+    // tokens[2] is '=' (Punctuation fallthrough)
+
+    CHECK(tokens[3].type   == TokenType::Float);
+    CHECK(tokens[3].lexeme == "3.14");
+
+    CHECK(tokens.back().type == TokenType::Eof);
+}
+
+TEST_CASE("Sequence of mixed numeric literals tokenizes correctly",
+          "[lexer][numeric][sequence]") {
+    // "10 3.14 0xFF 1e10"
+    auto tokens = lex("10 3.14 0xFF 1e10");
+    REQUIRE(tokens.size() >= 5);  // 4 numbers + Eof
+
+    CHECK(tokens[0].type   == TokenType::Integer);
+    CHECK(tokens[0].lexeme == "10");
+
+    CHECK(tokens[1].type   == TokenType::Float);
+    CHECK(tokens[1].lexeme == "3.14");
+
+    CHECK(tokens[2].type   == TokenType::Integer);
+    CHECK(tokens[2].lexeme == "0xFF");
+
+    CHECK(tokens[3].type   == TokenType::Float);
+    CHECK(tokens[3].lexeme == "1e10");
+
+    CHECK(tokens.back().type == TokenType::Eof);
+}
+
+// -----------------------------------------------------------------------------
+// Identifier interaction — digits do NOT make an identifier start valid
+// Day 5 behavior preserved: identifiers/keywords still scan correctly
+// alongside numeric literals.
+// -----------------------------------------------------------------------------
+
+TEST_CASE("'counter123' after integer is still Identifier", "[lexer][numeric][interaction]") {
+    // A word starting with a letter is always an identifier.
+    Token t = lexFirst("counter123");
+    CHECK(t.type   == TokenType::Identifier);
+    CHECK(t.lexeme == "counter123");
+}
+
+TEST_CASE("Integer and identifier are separate tokens: '42abc'",
+          "[lexer][numeric][interaction]") {
+    // In C, '42abc' is not a valid token. The lexer scans '42' as Integer,
+    // then 'abc' as Identifier (the parser/semantic phase will reject it).
+    auto tokens = lex("42abc");
+    REQUIRE(tokens.size() >= 3);  // Integer + Identifier + Eof
+    CHECK(tokens[0].type   == TokenType::Integer);
+    CHECK(tokens[0].lexeme == "42");
+    CHECK(tokens[1].type   == TokenType::Identifier);
+    CHECK(tokens[1].lexeme == "abc");
+}
