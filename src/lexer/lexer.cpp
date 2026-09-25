@@ -5,6 +5,47 @@
 #include <unordered_map>
 
 // =============================================================================
+// decodeEscape()  — Day 7
+// =============================================================================
+//
+// Maps the character that immediately follows a '\' in C source text to the
+// actual character it represents at runtime.
+//
+// Only the seven sequences below are part of the Day 7 scope.
+// An unknown escape character (e.g. '\q') returns '\0'; the lexeme in the
+// Token still retains the raw source characters (e.g. "\q") so a later
+// diagnostic phase can report the error with the original text.
+//
+char decodeEscape(char escapedChar) {
+    switch (escapedChar) {
+        case 'n':  return '\n';
+        case 't':  return '\t';
+        case '\\': return '\\';
+        case '\'': return '\'';
+        case '"':  return '"';
+        case '0':  return '\0';
+        case 'r':  return '\r';
+        default:   return '\0'; // unknown escape
+    }
+}
+
+// =============================================================================
+// isLexerError()  — Day 7
+// =============================================================================
+//
+// Returns true when a Token represents a lexer-level error.
+//
+// Error tokens use TokenType::Punctuation with a lexeme that begins with the
+// sentinel string "<error:". This avoids adding a new TokenType enum value
+// (which would change the Day 4 contract) while giving callers a clean way
+// to detect and inspect errors.
+//
+bool isLexerError(const Token& t) {
+    return t.lexeme.size() >= 7 &&
+           t.lexeme.substr(0, 7) == "<error:";
+}
+
+// =============================================================================
 // lookupKeyword()
 // =============================================================================
 //
@@ -288,12 +329,136 @@ Token Lexer::scanNumericLiteral() {
 }
 
 // =============================================================================
+// scanStringLiteral()  — Day 7
+// =============================================================================
+//
+// Pre-condition: peek() == '"'.
+//
+// Algorithm:
+//   1. Record start location. Consume the opening '"'.
+//   2. Loop:
+//        a. If EOF or raw newline is reached -> unterminated error.
+//        b. If '\' is seen -> consume it, consume next char, append both to
+//           lexeme (source spelling preserved), call decodeEscape() for the
+//           decoded value (decoded value is not stored in lexeme).
+//        c. If closing '"' is seen -> consume it, break.
+//        d. Otherwise -> append the character to lexeme, advance.
+//   3. Return Token{TokenType::String, lexeme, startLine, startColumn}.
+//
+// Error representation:
+//   An unterminated string returns:
+//     TokenType::Punctuation, lexeme = "<error: unterminated string>"
+//   isLexerError() returns true for this token.
+//
+// Lexeme includes surrounding quotes and escape sequences in source form:
+//   Source: "hello\n"  ->  lexeme: "hello\n"  (7 chars including quotes)
+//
+Token Lexer::scanStringLiteral() {
+    int startLine   = m_line;
+    int startColumn = m_column;
+
+    std::string lexeme;
+    lexeme += advance(); // consume and record opening '"'
+
+    while (true) {
+        if (isAtEnd() || peek() == '\n') {
+            // Unterminated string literal.
+            return Token{TokenType::Punctuation,
+                         "<error: unterminated string>",
+                         startLine, startColumn};
+        }
+
+        if (peek() == '"') {
+            lexeme += advance(); // consume closing '"'
+            break;
+        }
+
+        if (peek() == '\\') {
+            // Escape sequence: preserve source spelling in lexeme.
+            lexeme += advance();          // consume '\'
+            if (!isAtEnd()) {
+                char escaped = advance(); // consume the escape character
+                lexeme += escaped;
+                // decodeEscape(escaped) gives the runtime value;
+                // that decoded value is NOT stored in the lexeme (the lexeme
+                // always mirrors source text). Future AST/IR phases will decode.
+            }
+            continue;
+        }
+
+        lexeme += advance(); // normal character
+    }
+
+    return Token{TokenType::String, lexeme, startLine, startColumn};
+}
+
+// =============================================================================
+// scanCharLiteral()  — Day 7
+// =============================================================================
+//
+// Pre-condition: peek() == '\''.
+//
+// Algorithm:
+//   1. Record start location. Consume the opening '\''.
+//   2. Read one character or escape sequence.
+//   3. Require closing '\'' -> if missing, return error token.
+//   4. Return Token{TokenType::Char, lexeme, startLine, startColumn}.
+//
+// Day 7 scope: exactly one character or one escape sequence per char literal.
+// Multi-character constants (e.g. 'ab') are not supported and will produce
+// an error token because the second character is not the closing quote.
+//
+Token Lexer::scanCharLiteral() {
+    int startLine   = m_line;
+    int startColumn = m_column;
+
+    std::string lexeme;
+    lexeme += advance(); // consume opening '\''
+
+    if (isAtEnd() || peek() == '\n') {
+        return Token{TokenType::Punctuation,
+                     "<error: unterminated char literal>",
+                     startLine, startColumn};
+    }
+
+    if (peek() == '\\') {
+        // Escape sequence.
+        lexeme += advance();          // consume '\'
+        if (isAtEnd()) {
+            return Token{TokenType::Punctuation,
+                         "<error: unterminated char literal>",
+                         startLine, startColumn};
+        }
+        lexeme += advance();          // consume the escape character
+    } else if (peek() == '\'') {
+        // Empty char literal '' -> error.
+        lexeme += advance(); // consume closing quote for lexeme completeness
+        return Token{TokenType::Punctuation,
+                     "<error: empty char literal>",
+                     startLine, startColumn};
+    } else {
+        lexeme += advance();          // consume the single character
+    }
+
+    // Require closing quote.
+    if (isAtEnd() || peek() != '\'') {
+        return Token{TokenType::Punctuation,
+                     "<error: unterminated char literal>",
+                     startLine, startColumn};
+    }
+    lexeme += advance(); // consume closing '\''
+
+    return Token{TokenType::Char, lexeme, startLine, startColumn};
+}
+
+// =============================================================================
 // nextToken()
 // =============================================================================
 //
 // Returns the next token from the source.
 // Day 5: whitespace, identifiers, keywords, end-of-file.
 // Day 6: numeric literals (integer and float).
+// Day 7: string literals ('"') and character literals ('\''). 
 // Unknown characters fall through to a single-character Punctuation token
 // so that realistic snippets (e.g. containing ';' or '=') don't block tests.
 // Later days will replace the fallthrough branch with proper scanning.
@@ -315,6 +480,16 @@ Token Lexer::nextToken() {
     // --- Numeric literal (integer or float) --- Day 6
     if (std::isdigit(static_cast<unsigned char>(c))) {
         return scanNumericLiteral();
+    }
+
+    // --- String literal --- Day 7
+    if (c == '"') {
+        return scanStringLiteral();
+    }
+
+    // --- Character literal --- Day 7
+    if (c == '\'') {
+        return scanCharLiteral();
     }
 
     // --- Unknown / punctuation fallthrough ---

@@ -6,14 +6,15 @@
 #include <vector>
 
 // =============================================================================
-// Lexer — Day 5 / Day 6
+// Lexer — Day 5 / Day 6 / Day 7
 // =============================================================================
 //
 // Converts a C source string into a sequence of Tokens.
 //
 // Day 5 scope: identifier and keyword scanning.
 // Day 6 scope: integer and floating-point literal scanning.
-// Future days will add: strings, chars, operators, punctuation, comments,
+// Day 7 scope: string and character literal scanning with escape sequences.
+// Future days will add: operators, punctuation, comments,
 // and preprocessor directives.
 //
 // Usage:
@@ -82,6 +83,22 @@ private:
     //   - Exponent floats:       digits [. digits] e/E [+/-] digits
     // Returns TokenType::Integer or TokenType::Float.
     Token scanNumericLiteral();
+
+    // Scan a complete string literal token (Day 7).
+    // Pre-condition: peek() == '"'.
+    // Consumes the opening quote, all content (handling escape sequences),
+    // and the closing quote. If the string is unterminated (EOF or raw
+    // newline reached before closing '"'), returns an error token.
+    // The lexeme includes the surrounding quotes and escape sequences
+    // exactly as they appear in the source.
+    Token scanStringLiteral();
+
+    // Scan a complete character literal token (Day 7).
+    // Pre-condition: peek() == '\''.
+    // Consumes the opening quote, one character or escape sequence, and
+    // the closing quote. Returns an error token if unterminated.
+    // The lexeme includes the surrounding quotes.
+    Token scanCharLiteral();
 };
 
 // =============================================================================
@@ -95,3 +112,39 @@ private:
 // of the full Lexer class.
 //
 TokenType lookupKeyword(const std::string& text);
+
+// =============================================================================
+// decodeEscape()
+// =============================================================================
+//
+// Given the character that follows a backslash in a C source literal,
+// returns the decoded character value.
+//
+// Supported sequences (Day 7):
+//   \n  ->  newline  ('\n')
+//   \t  ->  tab      ('\t')
+//   \\  ->  backslash('\\')
+//   \'  ->  single-quote ('\'')
+//   \"  ->  double-quote ('"')
+//   \0  ->  null     ('\0')
+//   \r  ->  carriage return ('\r')
+//
+// Unknown escape: returns '\0' (the lexer emits the source characters
+// as-is in the lexeme; a later phase reports the diagnostic).
+//
+char decodeEscape(char escapedChar);
+
+// =============================================================================
+// isLexerError()
+// =============================================================================
+//
+// Returns true if the given token represents a lexer-level error.
+//
+// Day 7 error strategy: unterminated string/character literals are emitted
+// as Punctuation tokens whose lexeme begins with the sentinel prefix
+// "<error:". This keeps the Token structure unchanged (no new TokenType)
+// while allowing tests and callers to detect and inspect errors.
+//
+// Example lexeme for an unterminated string: "<error: unterminated string>"
+//
+bool isLexerError(const Token& t);

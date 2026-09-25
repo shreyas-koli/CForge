@@ -649,3 +649,364 @@ TEST_CASE("Integer and identifier are separate tokens: '42abc'",
     CHECK(tokens[1].type   == TokenType::Identifier);
     CHECK(tokens[1].lexeme == "abc");
 }
+
+// =============================================================================
+// DAY 7 TESTS — Character & String Literals
+// =============================================================================
+
+// Helper: confirm a token is NOT a lexer error
+static void requireNotError(const Token& t) {
+    REQUIRE_FALSE(isLexerError(t));
+}
+
+// =============================================================================
+// decodeEscape() — unit tests (tested independently of Lexer)
+// =============================================================================
+
+TEST_CASE("decodeEscape: \\n -> newline", "[lexer][escape]") {
+    CHECK(decodeEscape('n') == '\n');
+}
+TEST_CASE("decodeEscape: \\t -> tab", "[lexer][escape]") {
+    CHECK(decodeEscape('t') == '\t');
+}
+TEST_CASE("decodeEscape: \\\\ -> backslash", "[lexer][escape]") {
+    CHECK(decodeEscape('\\') == '\\');
+}
+TEST_CASE("decodeEscape: \\' -> single quote", "[lexer][escape]") {
+    CHECK(decodeEscape('\'') == '\'');
+}
+TEST_CASE("decodeEscape: \\\" -> double quote", "[lexer][escape]") {
+    CHECK(decodeEscape('"') == '"');
+}
+TEST_CASE("decodeEscape: \\0 -> null", "[lexer][escape]") {
+    CHECK(decodeEscape('0') == '\0');
+}
+TEST_CASE("decodeEscape: \\r -> carriage return", "[lexer][escape]") {
+    CHECK(decodeEscape('r') == '\r');
+}
+TEST_CASE("decodeEscape: unknown escape returns \\0", "[lexer][escape]") {
+    CHECK(decodeEscape('q') == '\0');
+    CHECK(decodeEscape('z') == '\0');
+}
+
+// =============================================================================
+// isLexerError() helper
+// =============================================================================
+
+TEST_CASE("isLexerError returns false for normal tokens", "[lexer][error]") {
+    Token normal{TokenType::String, "\"hello\"", 1, 1};
+    CHECK_FALSE(isLexerError(normal));
+
+    Token kw{TokenType::Keyword, "int", 1, 1};
+    CHECK_FALSE(isLexerError(kw));
+}
+
+TEST_CASE("isLexerError returns true for error sentinel lexemes", "[lexer][error]") {
+    Token err{TokenType::Punctuation, "<error: unterminated string>", 1, 1};
+    CHECK(isLexerError(err));
+}
+
+// =============================================================================
+// String literal scanning — basic
+// =============================================================================
+
+TEST_CASE("String: \"hello\" is a single String token", "[lexer][string]") {
+    auto tokens = lex("\"hello\"");
+    REQUIRE(tokens.size() == 2);   // String + Eof
+    CHECK(tokens[0].type   == TokenType::String);
+    CHECK(tokens[0].lexeme == "\"hello\"");
+    CHECK(tokens[1].type   == TokenType::Eof);
+}
+
+TEST_CASE("String: \"hello world\" (with space)", "[lexer][string]") {
+    Token t = lexFirst("\"hello world\"");
+    CHECK(t.type   == TokenType::String);
+    CHECK(t.lexeme == "\"hello world\"");
+}
+
+TEST_CASE("String: empty string \"\"", "[lexer][string]") {
+    Token t = lexFirst("\"\"");
+    CHECK(t.type   == TokenType::String);
+    CHECK(t.lexeme == "\"\"");
+}
+
+TEST_CASE("String: single character \"a\"", "[lexer][string]") {
+    Token t = lexFirst("\"a\"");
+    CHECK(t.type   == TokenType::String);
+    CHECK(t.lexeme == "\"a\"");
+}
+
+// =============================================================================
+// String literal — escape sequences
+// =============================================================================
+
+TEST_CASE("String escape: \"\\n\" contains newline escape", "[lexer][string][escape]") {
+    // Source: "  \n  "  (the two-character source sequence backslash + n)
+    Token t = lexFirst("\"\\n\"");
+    CHECK(t.type == TokenType::String);
+    // Lexeme preserves source spelling: opening quote, backslash, n, closing quote
+    CHECK(t.lexeme == "\"\\n\"");
+    requireNotError(t);
+}
+
+TEST_CASE("String escape: \"\\t\" contains tab escape", "[lexer][string][escape]") {
+    Token t = lexFirst("\"\\t\"");
+    CHECK(t.type   == TokenType::String);
+    CHECK(t.lexeme == "\"\\t\"");
+}
+
+TEST_CASE("String escape: \"\\\\\" contains escaped backslash", "[lexer][string][escape]") {
+    Token t = lexFirst("\"\\\\\"");
+    CHECK(t.type   == TokenType::String);
+    CHECK(t.lexeme == "\"\\\\\"");
+}
+
+TEST_CASE("String escape: \"\\\"\" contains escaped double quote", "[lexer][string][escape]") {
+    Token t = lexFirst("\"\\\"\"");
+    CHECK(t.type   == TokenType::String);
+    CHECK(t.lexeme == "\"\\\"\"");
+}
+
+TEST_CASE("String escape: \"hello\\n\" mixed content", "[lexer][string][escape]") {
+    Token t = lexFirst("\"hello\\n\"");
+    CHECK(t.type   == TokenType::String);
+    CHECK(t.lexeme == "\"hello\\n\"");
+}
+
+TEST_CASE("String escape: \"hello\\tworld\" with tab escape", "[lexer][string][escape]") {
+    Token t = lexFirst("\"hello\\tworld\"");
+    CHECK(t.type   == TokenType::String);
+    CHECK(t.lexeme == "\"hello\\tworld\"");
+}
+
+TEST_CASE("String escape: \"C:\\\\code\" with double backslash", "[lexer][string][escape]") {
+    Token t = lexFirst("\"C:\\\\code\"");
+    CHECK(t.type   == TokenType::String);
+    CHECK(t.lexeme == "\"C:\\\\code\"");
+}
+
+// =============================================================================
+// Character literal scanning — basic
+// =============================================================================
+
+TEST_CASE("Char: 'a' is a single Char token", "[lexer][char]") {
+    auto tokens = lex("'a'");
+    REQUIRE(tokens.size() == 2);   // Char + Eof
+    CHECK(tokens[0].type   == TokenType::Char);
+    CHECK(tokens[0].lexeme == "'a'");
+    CHECK(tokens[1].type   == TokenType::Eof);
+}
+
+TEST_CASE("Char: 'b'", "[lexer][char]") {
+    Token t = lexFirst("'b'");
+    CHECK(t.type   == TokenType::Char);
+    CHECK(t.lexeme == "'b'");
+}
+
+TEST_CASE("Char: '1' (digit character)", "[lexer][char]") {
+    Token t = lexFirst("'1'");
+    CHECK(t.type   == TokenType::Char);
+    CHECK(t.lexeme == "'1'");
+}
+
+TEST_CASE("Char: 'Z' (uppercase letter)", "[lexer][char]") {
+    Token t = lexFirst("'Z'");
+    CHECK(t.type   == TokenType::Char);
+    CHECK(t.lexeme == "'Z'");
+}
+
+// =============================================================================
+// Character literal — escape sequences
+// =============================================================================
+
+TEST_CASE("Char escape: '\\n' newline escape", "[lexer][char][escape]") {
+    Token t = lexFirst("'\\n'");
+    CHECK(t.type   == TokenType::Char);
+    CHECK(t.lexeme == "'\\n'");
+    requireNotError(t);
+}
+
+TEST_CASE("Char escape: '\\t' tab escape", "[lexer][char][escape]") {
+    Token t = lexFirst("'\\t'");
+    CHECK(t.type   == TokenType::Char);
+    CHECK(t.lexeme == "'\\t'");
+}
+
+TEST_CASE("Char escape: '\\\\' backslash escape", "[lexer][char][escape]") {
+    Token t = lexFirst("'\\\\' ");
+    CHECK(t.type   == TokenType::Char);
+    CHECK(t.lexeme == "'\\\\'");
+}
+
+TEST_CASE("Char escape: '\\'' single-quote escape", "[lexer][char][escape]") {
+    Token t = lexFirst("'\\''");
+    CHECK(t.type   == TokenType::Char);
+    CHECK(t.lexeme == "'\\''");
+}
+
+TEST_CASE("Char escape: '\\\"' double-quote escape", "[lexer][char][escape]") {
+    Token t = lexFirst("'\\\"'");
+    CHECK(t.type   == TokenType::Char);
+    CHECK(t.lexeme == "'\\\"'");
+}
+
+// =============================================================================
+// Lexeme preservation — quoted literals store source text including quotes
+// =============================================================================
+
+TEST_CASE("String lexeme includes surrounding double quotes", "[lexer][string][lexeme]") {
+    Token t = lexFirst("\"abc\"");
+    // Lexeme must start and end with '"'
+    REQUIRE(t.lexeme.size() >= 2);
+    CHECK(t.lexeme.front() == '"');
+    CHECK(t.lexeme.back()  == '"');
+    CHECK(t.lexeme == "\"abc\"");
+}
+
+TEST_CASE("Char lexeme includes surrounding single quotes", "[lexer][char][lexeme]") {
+    Token t = lexFirst("'x'");
+    REQUIRE(t.lexeme.size() >= 3);
+    CHECK(t.lexeme.front() == '\'');
+    CHECK(t.lexeme.back()  == '\'');
+    CHECK(t.lexeme == "'x'");
+}
+
+// =============================================================================
+// Location tracking — 1-based, points to opening quote
+// =============================================================================
+
+TEST_CASE("String token at start: line=1, column=1", "[lexer][string][location]") {
+    Token t = lexFirst("\"hello\"");
+    CHECK(t.type   == TokenType::String);
+    CHECK(t.line   == 1);
+    CHECK(t.column == 1);
+}
+
+TEST_CASE("String token after spaces: correct column", "[lexer][string][location]") {
+    // "   \"hi\"" -> 3 spaces then opening quote at column 4
+    Token t = lexFirst("   \"hi\"");
+    CHECK(t.type   == TokenType::String);
+    CHECK(t.line   == 1);
+    CHECK(t.column == 4);
+}
+
+TEST_CASE("Char token at start: line=1, column=1", "[lexer][char][location]") {
+    Token t = lexFirst("'a'");
+    CHECK(t.type   == TokenType::Char);
+    CHECK(t.line   == 1);
+    CHECK(t.column == 1);
+}
+
+TEST_CASE("Char token after spaces: correct column", "[lexer][char][location]") {
+    // "  'a'" -> 2 spaces then '\'' at column 3
+    Token t = lexFirst("  'a'");
+    CHECK(t.type   == TokenType::Char);
+    CHECK(t.line   == 1);
+    CHECK(t.column == 3);
+}
+
+// =============================================================================
+// Unterminated literal error handling
+// =============================================================================
+
+TEST_CASE("Unterminated string returns error token, does not crash", "[lexer][string][error]") {
+    // "hello  (no closing quote, no newline before EOF)
+    Token t = lexFirst("\"hello");
+    CHECK(isLexerError(t));
+    // Must not crash and must be safe to inspect
+    CHECK_FALSE(t.lexeme.empty());
+}
+
+TEST_CASE("String terminated by newline is unterminated error", "[lexer][string][error]") {
+    // "hello\n  (raw newline before closing quote)
+    Token t = lexFirst("\"hello\n");
+    CHECK(isLexerError(t));
+}
+
+TEST_CASE("Unterminated char literal returns error token, does not crash", "[lexer][char][error]") {
+    // 'a  (no closing quote)
+    Token t = lexFirst("'a");
+    CHECK(isLexerError(t));
+}
+
+TEST_CASE("Empty char literal '' returns error token", "[lexer][char][error]") {
+    Token t = lexFirst("''");
+    CHECK(isLexerError(t));
+}
+
+// =============================================================================
+// Day 5–6 interactions preserved
+// =============================================================================
+
+TEST_CASE("Identifiers still scanned correctly after Day 7", "[lexer][string][interaction]") {
+    Token t = lexFirst("counter");
+    CHECK(t.type   == TokenType::Identifier);
+    CHECK(t.lexeme == "counter");
+}
+
+TEST_CASE("Keywords still scanned correctly after Day 7", "[lexer][char][interaction]") {
+    Token t = lexFirst("int");
+    CHECK(t.type   == TokenType::Keyword);
+    CHECK(t.lexeme == "int");
+}
+
+TEST_CASE("Numeric literals still scanned correctly after Day 7", "[lexer][string][interaction]") {
+    CHECK(lexFirst("42").type   == TokenType::Integer);
+    CHECK(lexFirst("3.14").type == TokenType::Float);
+    CHECK(lexFirst("0xFF").type == TokenType::Integer);
+}
+
+// =============================================================================
+// Realistic source snippets
+// =============================================================================
+
+TEST_CASE("'char c = 'a';' — keyword, identifier, char literal in sequence",
+          "[lexer][char][sequence]") {
+    auto tokens = lex("char c = 'a';");
+    // Expected: Keyword("char"), Identifier("c"), Punct("="), Char("'a'"), Punct(";"), Eof
+    REQUIRE(tokens.size() >= 5);
+
+    CHECK(tokens[0].type   == TokenType::Keyword);
+    CHECK(tokens[0].lexeme == "char");
+
+    CHECK(tokens[1].type   == TokenType::Identifier);
+    CHECK(tokens[1].lexeme == "c");
+
+    // tokens[2] = '=' (Punctuation fallthrough)
+
+    CHECK(tokens[3].type   == TokenType::Char);
+    CHECK(tokens[3].lexeme == "'a'");
+
+    CHECK(tokens.back().type == TokenType::Eof);
+}
+
+TEST_CASE("String assignment: identifier and string literal in sequence",
+          "[lexer][string][sequence]") {
+    // char* msg = "hello\n";
+    auto tokens = lex("msg = \"hello\\n\";");
+    // Identifier("msg"), Punct("="), String("\"hello\\n\""), Punct(";"), Eof
+    REQUIRE(tokens.size() >= 4);
+
+    CHECK(tokens[0].type   == TokenType::Identifier);
+    CHECK(tokens[0].lexeme == "msg");
+
+    // tokens[1] = '=' (Punctuation fallthrough)
+
+    CHECK(tokens[2].type   == TokenType::String);
+    CHECK(tokens[2].lexeme == "\"hello\\n\"");
+
+    CHECK(tokens.back().type == TokenType::Eof);
+}
+
+TEST_CASE("Multiple string tokens in sequence", "[lexer][string][sequence]") {
+    auto tokens = lex("\"hello\" \"world\"");
+    REQUIRE(tokens.size() >= 3);  // String + String + Eof
+
+    CHECK(tokens[0].type   == TokenType::String);
+    CHECK(tokens[0].lexeme == "\"hello\"");
+
+    CHECK(tokens[1].type   == TokenType::String);
+    CHECK(tokens[1].lexeme == "\"world\"");
+
+    CHECK(tokens.back().type == TokenType::Eof);
+}
