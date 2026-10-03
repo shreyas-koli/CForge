@@ -492,10 +492,104 @@ Token Lexer::nextToken() {
         return scanCharLiteral();
     }
 
-    // --- Unknown / punctuation fallthrough ---
-    // Single-character catch-all until operators and punctuation are
-    // implemented in a later day. Emits a Punctuation token so that
-    // realistic snippets like "int x = 123;" remain testable.
+    // --- Operators and Punctuation --- Day 8
+    int startLine   = m_line;
+    int startColumn = m_column;
+
+    switch (c) {
+        // Multi-character operators (with single-character fallbacks)
+        case '=': {
+            advance();
+            if (peek() == '=') {
+                advance();
+                return Token{TokenType::Operator, "==", startLine, startColumn};
+            }
+            return Token{TokenType::Operator, "=", startLine, startColumn};
+        }
+        case '!': {
+            advance();
+            if (peek() == '=') {
+                advance();
+                return Token{TokenType::Operator, "!=", startLine, startColumn};
+            }
+            return Token{TokenType::Operator, "!", startLine, startColumn};
+        }
+        case '<': {
+            advance();
+            if (peek() == '=') {
+                advance();
+                return Token{TokenType::Operator, "<=", startLine, startColumn};
+            }
+            return Token{TokenType::Operator, "<", startLine, startColumn};
+        }
+        case '>': {
+            advance();
+            if (peek() == '=') {
+                advance();
+                return Token{TokenType::Operator, ">=", startLine, startColumn};
+            }
+            return Token{TokenType::Operator, ">", startLine, startColumn};
+        }
+        case '&': {
+            advance();
+            if (peek() == '&') {
+                advance();
+                return Token{TokenType::Operator, "&&", startLine, startColumn};
+            }
+            return Token{TokenType::Operator, "&", startLine, startColumn};
+        }
+        case '|': {
+            advance();
+            if (peek() == '|') {
+                advance();
+                return Token{TokenType::Operator, "||", startLine, startColumn};
+            }
+            return Token{TokenType::Operator, "|", startLine, startColumn};
+        }
+        case '+': {
+            advance();
+            if (peek() == '+') {
+                advance();
+                return Token{TokenType::Operator, "++", startLine, startColumn};
+            }
+            return Token{TokenType::Operator, "+", startLine, startColumn};
+        }
+        case '-': {
+            advance();
+            if (peek() == '-') {
+                advance();
+                return Token{TokenType::Operator, "--", startLine, startColumn};
+            }
+            return Token{TokenType::Operator, "-", startLine, startColumn};
+        }
+
+        // Single-character operators only
+        case '*':
+        case '/':
+        case '%':
+        case '^':
+        case '~': {
+            advance();
+            return Token{TokenType::Operator, std::string(1, c), startLine, startColumn};
+        }
+
+        // Punctuation (Day 8)
+        case '(':
+        case ')':
+        case '{':
+        case '}':
+        case '[':
+        case ']':
+        case ';':
+        case ',':
+        case '.': {
+            advance();
+            return Token{TokenType::Punctuation, std::string(1, c), startLine, startColumn};
+        }
+    }
+
+    // --- Unknown character fallthrough ---
+    // Single-character catch-all for unrecognized characters.
     int unknownLine   = m_line;
     int unknownColumn = m_column;
     advance();

@@ -1010,3 +1010,307 @@ TEST_CASE("Multiple string tokens in sequence", "[lexer][string][sequence]") {
 
     CHECK(tokens.back().type == TokenType::Eof);
 }
+
+// =============================================================================
+// DAY 8 TESTS — Operators & Punctuation
+// =============================================================================
+
+// -----------------------------------------------------------------------------
+// 1. Single-character operators
+// -----------------------------------------------------------------------------
+
+TEST_CASE("Single-character operators scan as TokenType::Operator", "[lexer][operator]") {
+    struct OpCase { std::string src; std::string expected; };
+    std::vector<OpCase> cases = {
+        {"+", "+"},
+        {"-", "-"},
+        {"*", "*"},
+        {"/", "/"},
+        {"%", "%"},
+        {"=", "="},
+        {"!", "!"},
+        {"<", "<"},
+        {">", ">"},
+        {"&", "&"},
+        {"|", "|"},
+        {"^", "^"},
+        {"~", "~"},
+    };
+
+    for (const auto& c : cases) {
+        Token t = lexFirst(c.src);
+        CHECK(t.type   == TokenType::Operator);
+        CHECK(t.lexeme == c.expected);
+    }
+}
+
+// -----------------------------------------------------------------------------
+// 2. Multi-character operators
+// -----------------------------------------------------------------------------
+
+TEST_CASE("Multi-character operators scan as TokenType::Operator", "[lexer][operator]") {
+    struct OpCase { std::string src; std::string expected; };
+    std::vector<OpCase> cases = {
+        {"==", "=="},
+        {"!=", "!="},
+        {"<=", "<="},
+        {">=", ">="},
+        {"&&", "&&"},
+        {"||", "||"},
+        {"++", "++"},
+        {"--", "--"},
+    };
+
+    for (const auto& c : cases) {
+        Token t = lexFirst(c.src);
+        CHECK(t.type   == TokenType::Operator);
+        CHECK(t.lexeme == c.expected);
+    }
+}
+
+// -----------------------------------------------------------------------------
+// 3. Punctuation
+// -----------------------------------------------------------------------------
+
+TEST_CASE("Punctuation characters scan as TokenType::Punctuation", "[lexer][punctuation]") {
+    struct PunctCase { std::string src; std::string expected; };
+    std::vector<PunctCase> cases = {
+        {"(", "("},
+        {")", ")"},
+        {"{", "{"},
+        {"}", "}"},
+        {"[", "["},
+        {"]", "]"},
+        {";", ";"},
+        {",", ","},
+        {".", "."},
+    };
+
+    for (const auto& c : cases) {
+        Token t = lexFirst(c.src);
+        CHECK(t.type   == TokenType::Punctuation);
+        CHECK(t.lexeme == c.expected);
+    }
+}
+
+// -----------------------------------------------------------------------------
+// 4. Longest-match behavior
+// -----------------------------------------------------------------------------
+
+TEST_CASE("Longest-match: '===' produces '==' followed by '='", "[lexer][operator][longest-match]") {
+    auto tokens = lex("===");
+    REQUIRE(tokens.size() == 3); // ==, =, Eof
+    CHECK(tokens[0].type   == TokenType::Operator);
+    CHECK(tokens[0].lexeme == "==");
+    CHECK(tokens[1].type   == TokenType::Operator);
+    CHECK(tokens[1].lexeme == "=");
+    CHECK(tokens[2].type   == TokenType::Eof);
+}
+
+TEST_CASE("Longest-match: '+++' produces '++' followed by '+'", "[lexer][operator][longest-match]") {
+    auto tokens = lex("+++");
+    REQUIRE(tokens.size() == 3);
+    CHECK(tokens[0].type   == TokenType::Operator);
+    CHECK(tokens[0].lexeme == "++");
+    CHECK(tokens[1].type   == TokenType::Operator);
+    CHECK(tokens[1].lexeme == "+");
+    CHECK(tokens[2].type   == TokenType::Eof);
+}
+
+TEST_CASE("Longest-match: '---' produces '--' followed by '-'", "[lexer][operator][longest-match]") {
+    auto tokens = lex("---");
+    REQUIRE(tokens.size() == 3);
+    CHECK(tokens[0].type   == TokenType::Operator);
+    CHECK(tokens[0].lexeme == "--");
+    CHECK(tokens[1].type   == TokenType::Operator);
+    CHECK(tokens[1].lexeme == "-");
+    CHECK(tokens[2].type   == TokenType::Eof);
+}
+
+TEST_CASE("Longest-match: '&&&' produces '&&' followed by '&'", "[lexer][operator][longest-match]") {
+    auto tokens = lex("&&&");
+    REQUIRE(tokens.size() == 3);
+    CHECK(tokens[0].type   == TokenType::Operator);
+    CHECK(tokens[0].lexeme == "&&");
+    CHECK(tokens[1].type   == TokenType::Operator);
+    CHECK(tokens[1].lexeme == "&");
+    CHECK(tokens[2].type   == TokenType::Eof);
+}
+
+TEST_CASE("Longest-match: '|||' produces '||' followed by '|'", "[lexer][operator][longest-match]") {
+    auto tokens = lex("|||");
+    REQUIRE(tokens.size() == 3);
+    CHECK(tokens[0].type   == TokenType::Operator);
+    CHECK(tokens[0].lexeme == "||");
+    CHECK(tokens[1].type   == TokenType::Operator);
+    CHECK(tokens[1].lexeme == "|");
+    CHECK(tokens[2].type   == TokenType::Eof);
+}
+
+TEST_CASE("Longest-match: '<=' produces '<=' token", "[lexer][operator][longest-match]") {
+    auto tokens = lex("<=");
+    REQUIRE(tokens.size() == 2);
+    CHECK(tokens[0].type   == TokenType::Operator);
+    CHECK(tokens[0].lexeme == "<=");
+    CHECK(tokens[1].type   == TokenType::Eof);
+}
+
+TEST_CASE("Longest-match: '>=' produces '>=' token", "[lexer][operator][longest-match]") {
+    auto tokens = lex(">=");
+    REQUIRE(tokens.size() == 2);
+    CHECK(tokens[0].type   == TokenType::Operator);
+    CHECK(tokens[0].lexeme == ">=");
+    CHECK(tokens[1].type   == TokenType::Eof);
+}
+
+// -----------------------------------------------------------------------------
+// 5. Mixed expressions
+// -----------------------------------------------------------------------------
+
+TEST_CASE("Mixed expression: 'a+b'", "[lexer][operator][expression]") {
+    auto tokens = lex("a+b");
+    REQUIRE(tokens.size() == 4);
+    CHECK(tokens[0].type   == TokenType::Identifier);
+    CHECK(tokens[0].lexeme == "a");
+    CHECK(tokens[1].type   == TokenType::Operator);
+    CHECK(tokens[1].lexeme == "+");
+    CHECK(tokens[2].type   == TokenType::Identifier);
+    CHECK(tokens[2].lexeme == "b");
+    CHECK(tokens[3].type   == TokenType::Eof);
+}
+
+TEST_CASE("Mixed expression: 'a==b'", "[lexer][operator][expression]") {
+    auto tokens = lex("a==b");
+    REQUIRE(tokens.size() == 4);
+    CHECK(tokens[0].type   == TokenType::Identifier);
+    CHECK(tokens[0].lexeme == "a");
+    CHECK(tokens[1].type   == TokenType::Operator);
+    CHECK(tokens[1].lexeme == "==");
+    CHECK(tokens[2].type   == TokenType::Identifier);
+    CHECK(tokens[2].lexeme == "b");
+    CHECK(tokens[3].type   == TokenType::Eof);
+}
+
+TEST_CASE("Mixed expression: 'a<=b'", "[lexer][operator][expression]") {
+    auto tokens = lex("a<=b");
+    REQUIRE(tokens.size() == 4);
+    CHECK(tokens[0].type   == TokenType::Identifier);
+    CHECK(tokens[0].lexeme == "a");
+    CHECK(tokens[1].type   == TokenType::Operator);
+    CHECK(tokens[1].lexeme == "<=");
+    CHECK(tokens[2].type   == TokenType::Identifier);
+    CHECK(tokens[2].lexeme == "b");
+    CHECK(tokens[3].type   == TokenType::Eof);
+}
+
+TEST_CASE("Mixed expression: 'i++'", "[lexer][operator][expression]") {
+    auto tokens = lex("i++");
+    REQUIRE(tokens.size() == 3);
+    CHECK(tokens[0].type   == TokenType::Identifier);
+    CHECK(tokens[0].lexeme == "i");
+    CHECK(tokens[1].type   == TokenType::Operator);
+    CHECK(tokens[1].lexeme == "++");
+    CHECK(tokens[2].type   == TokenType::Eof);
+}
+
+TEST_CASE("Mixed expression: '--i'", "[lexer][operator][expression]") {
+    auto tokens = lex("--i");
+    REQUIRE(tokens.size() == 3);
+    CHECK(tokens[0].type   == TokenType::Operator);
+    CHECK(tokens[0].lexeme == "--");
+    CHECK(tokens[1].type   == TokenType::Identifier);
+    CHECK(tokens[1].lexeme == "i");
+    CHECK(tokens[2].type   == TokenType::Eof);
+}
+
+TEST_CASE("Mixed expression: 'a&&b'", "[lexer][operator][expression]") {
+    auto tokens = lex("a&&b");
+    REQUIRE(tokens.size() == 4);
+    CHECK(tokens[0].type   == TokenType::Identifier);
+    CHECK(tokens[0].lexeme == "a");
+    CHECK(tokens[1].type   == TokenType::Operator);
+    CHECK(tokens[1].lexeme == "&&");
+    CHECK(tokens[2].type   == TokenType::Identifier);
+    CHECK(tokens[2].lexeme == "b");
+    CHECK(tokens[3].type   == TokenType::Eof);
+}
+
+TEST_CASE("Mixed expression: 'a||b'", "[lexer][operator][expression]") {
+    auto tokens = lex("a||b");
+    REQUIRE(tokens.size() == 4);
+    CHECK(tokens[0].type   == TokenType::Identifier);
+    CHECK(tokens[0].lexeme == "a");
+    CHECK(tokens[1].type   == TokenType::Operator);
+    CHECK(tokens[1].lexeme == "||");
+    CHECK(tokens[2].type   == TokenType::Identifier);
+    CHECK(tokens[2].lexeme == "b");
+    CHECK(tokens[3].type   == TokenType::Eof);
+}
+
+// -----------------------------------------------------------------------------
+// 6. Punctuation mixed with existing tokens
+// -----------------------------------------------------------------------------
+
+TEST_CASE("Punctuation snippet: 'int main() { return 0; }'", "[lexer][punctuation][sequence]") {
+    auto tokens = lex("int main() { return 0; }");
+    REQUIRE(tokens.size() == 10);
+
+    CHECK(tokens[0].type   == TokenType::Keyword);
+    CHECK(tokens[0].lexeme == "int");
+
+    CHECK(tokens[1].type   == TokenType::Identifier);
+    CHECK(tokens[1].lexeme == "main");
+
+    CHECK(tokens[2].type   == TokenType::Punctuation);
+    CHECK(tokens[2].lexeme == "(");
+
+    CHECK(tokens[3].type   == TokenType::Punctuation);
+    CHECK(tokens[3].lexeme == ")");
+
+    CHECK(tokens[4].type   == TokenType::Punctuation);
+    CHECK(tokens[4].lexeme == "{");
+
+    CHECK(tokens[5].type   == TokenType::Keyword);
+    CHECK(tokens[5].lexeme == "return");
+
+    CHECK(tokens[6].type   == TokenType::Integer);
+    CHECK(tokens[6].lexeme == "0");
+
+    CHECK(tokens[7].type   == TokenType::Punctuation);
+    CHECK(tokens[7].lexeme == ";");
+
+    CHECK(tokens[8].type   == TokenType::Punctuation);
+    CHECK(tokens[8].lexeme == "}");
+
+    CHECK(tokens[9].type   == TokenType::Eof);
+}
+
+// -----------------------------------------------------------------------------
+// 7. Location tracking for operators and punctuation
+// -----------------------------------------------------------------------------
+
+TEST_CASE("Location tracking for operator: '+' at col 3", "[lexer][operator][location]") {
+    Token t = lexFirst("  +");
+    CHECK(t.type   == TokenType::Operator);
+    CHECK(t.lexeme == "+");
+    CHECK(t.line   == 1);
+    CHECK(t.column == 3);
+}
+
+TEST_CASE("Location tracking for multi-char operator: '==' at col 4", "[lexer][operator][location]") {
+    Token t = lexFirst("   ==");
+    CHECK(t.type   == TokenType::Operator);
+    CHECK(t.lexeme == "==");
+    CHECK(t.line   == 1);
+    CHECK(t.column == 4);
+}
+
+TEST_CASE("Location tracking for punctuation: '(' at line 2", "[lexer][punctuation][location]") {
+    auto tokens = lex("\n(");
+    REQUIRE(tokens.size() >= 1);
+    CHECK(tokens[0].type   == TokenType::Punctuation);
+    CHECK(tokens[0].lexeme == "(");
+    CHECK(tokens[0].line   == 2);
+    CHECK(tokens[0].column == 1);
+}
+

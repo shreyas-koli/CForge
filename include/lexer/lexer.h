@@ -6,7 +6,7 @@
 #include <vector>
 
 // =============================================================================
-// Lexer — Day 5 / Day 6 / Day 7
+// Lexer — Day 5 / Day 6 / Day 7 / Day 8
 // =============================================================================
 //
 // Converts a C source string into a sequence of Tokens.
@@ -14,8 +14,8 @@
 // Day 5 scope: identifier and keyword scanning.
 // Day 6 scope: integer and floating-point literal scanning.
 // Day 7 scope: string and character literal scanning with escape sequences.
-// Future days will add: operators, punctuation, comments,
-// and preprocessor directives.
+// Day 8 scope: operators and punctuation scanning with longest-match rule.
+// Future days will add: comments and preprocessor directives.
 //
 // Usage:
 //   Lexer lexer(sourceCode);
