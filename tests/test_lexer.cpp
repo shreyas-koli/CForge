@@ -1314,3 +1314,139 @@ TEST_CASE("Location tracking for punctuation: '(' at line 2", "[lexer][punctuati
     CHECK(tokens[0].column == 1);
 }
 
+// =============================================================================
+// DAY 9 TESTS - Comments
+// =============================================================================
+
+static void checkEquivalentTokens(const std::vector<Token>& actual,
+                                  const std::vector<Token>& expected) {
+    REQUIRE(actual.size() == expected.size());
+    for (std::size_t i = 0; i < expected.size(); ++i) {
+        CHECK(actual[i].type == expected[i].type);
+        CHECK(actual[i].lexeme == expected[i].lexeme);
+    }
+}
+
+TEST_CASE("Line comment by itself produces only Eof", "[lexer][comment][line]") {
+    auto tokens = lex("// comment");
+    REQUIRE(tokens.size() == 1);
+    CHECK(tokens[0].type == TokenType::Eof);
+}
+
+TEST_CASE("Line comment after tokens is skipped", "[lexer][comment][line]") {
+    auto tokens = lex("int x; // comment");
+    REQUIRE(tokens.size() == 4);
+    CHECK(tokens[0].lexeme == "int");
+    CHECK(tokens[1].lexeme == "x");
+    CHECK(tokens[2].lexeme == ";");
+    CHECK(tokens[3].type == TokenType::Eof);
+}
+
+TEST_CASE("Line comment preserves the next line location", "[lexer][comment][line][location]") {
+    auto tokens = lex("// comment\nint x;");
+    REQUIRE(tokens.size() == 4);
+    CHECK(tokens[0].lexeme == "int");
+    CHECK(tokens[0].line == 2);
+    CHECK(tokens[0].column == 1);
+    CHECK(tokens[1].lexeme == "x");
+    CHECK(tokens[1].line == 2);
+    CHECK(tokens[1].column == 5);
+}
+
+TEST_CASE("Line comment at EOF without newline is safe", "[lexer][comment][line]") {
+    auto tokens = lex("int x; // comment");
+    REQUIRE(tokens.back().type == TokenType::Eof);
+    CHECK_FALSE(isLexerError(tokens.back()));
+}
+
+TEST_CASE("Multiple consecutive line comments are skipped", "[lexer][comment][line]") {
+    auto tokens = lex("// one\n// two\nint x;");
+    REQUIRE(tokens.size() == 4);
+    CHECK(tokens[0].lexeme == "int");
+    CHECK(tokens[0].line == 3);
+    CHECK(tokens[1].lexeme == "x");
+    CHECK(tokens[2].lexeme == ";");
+}
+
+TEST_CASE("Block comment by itself produces only Eof", "[lexer][comment][block]") {
+    auto tokens = lex("/* comment */");
+    REQUIRE(tokens.size() == 1);
+    CHECK(tokens[0].type == TokenType::Eof);
+}
+
+TEST_CASE("Block comments between tokens are skipped", "[lexer][comment][block]") {
+    auto tokens = lex("int /* comment */ x /* another */ = 10;");
+    REQUIRE(tokens.size() == 6);
+    CHECK(tokens[0].lexeme == "int");
+    CHECK(tokens[1].lexeme == "x");
+    CHECK(tokens[2].lexeme == "=");
+    CHECK(tokens[3].lexeme == "10");
+    CHECK(tokens[4].lexeme == ";");
+    CHECK(tokens[5].type == TokenType::Eof);
+}
+
+TEST_CASE("Empty block comment is skipped", "[lexer][comment][block]") {
+    auto tokens = lex("/**/int x;");
+    REQUIRE(tokens.size() == 4);
+    CHECK(tokens[0].lexeme == "int");
+    CHECK(tokens[1].lexeme == "x");
+    CHECK(tokens[2].lexeme == ";");
+}
+
+TEST_CASE("Multiline block comment updates line and column", "[lexer][comment][block][location]") {
+    auto tokens = lex("int /* first\nsecond\nthird */ x;");
+    REQUIRE(tokens.size() == 4);
+    CHECK(tokens[1].lexeme == "x");
+    CHECK(tokens[1].line == 3);
+    CHECK(tokens[1].column == 10);
+    CHECK(tokens[2].lexeme == ";");
+    CHECK(tokens[2].line == 3);
+    CHECK(tokens[2].column == 11);
+}
+
+TEST_CASE("Comments are equivalent to whitespace", "[lexer][comment][equivalence]") {
+    checkEquivalentTokens(lex("int x = 10;"),
+                          lex("int /* comment */ x = /* another */ 10;"));
+    checkEquivalentTokens(lex("a + b"), lex("a + /* comment */ b"));
+}
+
+TEST_CASE("Comment markers inside strings remain string text", "[lexer][comment][literal]") {
+    auto tokens = lex("\"// hello\" \"/* hello */\"");
+    REQUIRE(tokens.size() == 3);
+    CHECK(tokens[0].type == TokenType::String);
+    CHECK(tokens[0].lexeme == "\"// hello\"");
+    CHECK(tokens[1].type == TokenType::String);
+    CHECK(tokens[1].lexeme == "\"/* hello */\"");
+}
+
+TEST_CASE("Slash and star inside character literals remain char text", "[lexer][comment][literal]") {
+    auto tokens = lex("char a = '/'; char b = '*';");
+    REQUIRE(tokens.size() == 11);
+    CHECK(tokens[3].type == TokenType::Char);
+    CHECK(tokens[3].lexeme == "'/'");
+    CHECK(tokens[8].type == TokenType::Char);
+    CHECK(tokens[8].lexeme == "'*'");
+}
+
+TEST_CASE("Single slash and star remain operators", "[lexer][comment][operator]") {
+    auto tokens = lex("/ * a / b a * b");
+    REQUIRE(tokens.size() == 9);
+    CHECK(tokens[0].type == TokenType::Operator);
+    CHECK(tokens[0].lexeme == "/");
+    CHECK(tokens[1].type == TokenType::Operator);
+    CHECK(tokens[1].lexeme == "*");
+    CHECK(tokens[3].lexeme == "/");
+    CHECK(tokens[6].lexeme == "*");
+    CHECK(tokens[8].type == TokenType::Eof);
+}
+
+TEST_CASE("Unterminated block comment returns a located error", "[lexer][comment][error]") {
+    auto tokens = lex("  /* unterminated");
+    REQUIRE(tokens.size() == 2);
+    CHECK(isLexerError(tokens[0]));
+    CHECK(tokens[0].lexeme == "<error: unterminated block comment>");
+    CHECK(tokens[0].line == 1);
+    CHECK(tokens[0].column == 3);
+    CHECK(tokens[1].type == TokenType::Eof);
+}
+

@@ -173,6 +173,53 @@ void Lexer::skipWhitespace() {
 }
 
 // =============================================================================
+// skipComments() - Day 9
+// =============================================================================
+//
+// Comments are skipped only from the normal token boundary. String and
+// character literal scanners consume their contents before this helper can
+// inspect them, so comment-like text inside literals remains literal text.
+//
+bool Lexer::skipComments(Token& errorToken) {
+    if (peek() != '/') {
+        return false;
+    }
+
+    if (peekNext() == '/') {
+        advance(); // consume the first '/'
+        advance(); // consume the second '/'
+        while (!isAtEnd() && peek() != '\n') {
+            advance();
+        }
+        return false;
+    }
+
+    if (peekNext() == '*') {
+        int startLine = m_line;
+        int startColumn = m_column;
+
+        advance(); // consume the opening '/'
+        advance(); // consume the opening '*'
+
+        while (!isAtEnd()) {
+            if (peek() == '*' && peekNext() == '/') {
+                advance(); // consume the '*'
+                advance(); // consume the closing '/'
+                return false;
+            }
+            advance();
+        }
+
+        errorToken = Token{TokenType::Punctuation,
+                           "<error: unterminated block comment>",
+                           startLine, startColumn};
+        return true;
+    }
+
+    return false;
+}
+
+// =============================================================================
 // scanIdentifierOrKeyword()
 // =============================================================================
 //
@@ -464,7 +511,18 @@ Token Lexer::scanCharLiteral() {
 // Later days will replace the fallthrough branch with proper scanning.
 //
 Token Lexer::nextToken() {
-    skipWhitespace();
+    while (true) {
+        skipWhitespace();
+
+        if (peek() != '/' || (peekNext() != '/' && peekNext() != '*')) {
+            break;
+        }
+
+        Token errorToken{};
+        if (skipComments(errorToken)) {
+            return errorToken;
+        }
+    }
 
     if (isAtEnd()) {
         return Token{TokenType::Eof, "", m_line, m_column};

@@ -30,6 +30,9 @@ enum class CompileResult {
 //   Entry point for the compilation pipeline.
 //   Stages executed (all stubs for now):
 //     1. Lexer          -> tokens
+
+
+
 //     2. Parser         -> AST
 //     3. Semantic       -> Typed AST
 //     4. Code generation -> object/assembly

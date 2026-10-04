@@ -15,7 +15,8 @@
 // Day 6 scope: integer and floating-point literal scanning.
 // Day 7 scope: string and character literal scanning with escape sequences.
 // Day 8 scope: operators and punctuation scanning with longest-match rule.
-// Future days will add: comments and preprocessor directives.
+// Day 9 scope: single-line and block comment skipping.
+// Future days will add: preprocessor directives.
 //
 // Usage:
 //   Lexer lexer(sourceCode);
@@ -62,6 +63,10 @@ private:
     // Advance past any whitespace characters (space, tab, \r, \n).
     // Updates line/column tracking as newlines are consumed.
     void skipWhitespace();
+
+    // Advance past consecutive comments. Returns an error token when a block
+    // comment reaches EOF without a closing */.
+    bool skipComments(Token& errorToken);
 
     // Return the character ONE position ahead of the current cursor.
     // Returns '\0' if past end. Does not advance the cursor.
