@@ -1,6 +1,10 @@
 #include "driver.h"
+#include "lexer/lexer.h"
 
+#include <fstream>
+#include <iomanip>
 #include <iostream>
+#include <iterator>
 #include <string>
 
 // ---------------------------------------------------------------------------
@@ -11,8 +15,29 @@
 static int printUsage(const char* programName) {
     std::cerr << "Usage:\n"
               << "  " << programName << " <input.c>\n"
-              << "  " << programName << " <input.c> -o <output>\n";
+              << "  " << programName << " <input.c> -o <output>\n"
+              << "  " << programName << " --dump-tokens <input.c>\n";
     return 1;
+}
+
+static int dumpTokens(const std::string& inputFile) {
+    std::ifstream input(inputFile);
+    if (!input.good()) {
+        std::cerr << "cforge: error: file not found: " << inputFile << "\n";
+        return 1;
+    }
+
+    std::string source((std::istreambuf_iterator<char>(input)),
+                       std::istreambuf_iterator<char>());
+    Lexer lexer(std::move(source));
+
+    for (const Token& token : lexer.tokenize()) {
+        std::cout << std::left << std::setw(12) << tokenTypeName(token.type)
+                  << " " << std::quoted(token.lexeme)
+                  << " " << token.line << ":" << token.column << "\n";
+    }
+
+    return 0;
 }
 
 // ---------------------------------------------------------------------------
@@ -36,6 +61,13 @@ int main(int argc, char* argv[]) {
     // argc == 1 means only the program name was supplied; no source file.
     if (argc < 2) {
         return printUsage(argv[0]);
+    }
+
+    if (std::string(argv[1]) == "--dump-tokens") {
+        if (argc != 3) {
+            return printUsage(argv[0]);
+        }
+        return dumpTokens(argv[2]);
     }
 
     // --- Populate DriverConfig ----------------------------------------------

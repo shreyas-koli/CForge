@@ -1450,3 +1450,125 @@ TEST_CASE("Unterminated block comment returns a located error", "[lexer][comment
     CHECK(tokens[1].type == TokenType::Eof);
 }
 
+// =============================================================================
+// DAY 10 TESTS - End-to-end lexer integration
+// =============================================================================
+
+TEST_CASE("Small C program produces the complete token stream", "[lexer][integration]") {
+    auto tokens = lex(
+        "int main() {\n"
+        "    int x = 10;\n"
+        "    return x + 20;\n"
+        "}");
+
+    std::vector<Token> expected = {
+        {TokenType::Keyword, "int", 0, 0},
+        {TokenType::Identifier, "main", 0, 0},
+        {TokenType::Punctuation, "(", 0, 0},
+        {TokenType::Punctuation, ")", 0, 0},
+        {TokenType::Punctuation, "{", 0, 0},
+        {TokenType::Keyword, "int", 0, 0},
+        {TokenType::Identifier, "x", 0, 0},
+        {TokenType::Operator, "=", 0, 0},
+        {TokenType::Integer, "10", 0, 0},
+        {TokenType::Punctuation, ";", 0, 0},
+        {TokenType::Keyword, "return", 0, 0},
+        {TokenType::Identifier, "x", 0, 0},
+        {TokenType::Operator, "+", 0, 0},
+        {TokenType::Integer, "20", 0, 0},
+        {TokenType::Punctuation, ";", 0, 0},
+        {TokenType::Punctuation, "}", 0, 0},
+        {TokenType::Eof, "", 0, 0},
+    };
+
+    checkEquivalentTokens(tokens, expected);
+}
+
+TEST_CASE("Realistic source combines literals, punctuation, operators, and comments",
+          "[lexer][integration]") {
+    auto tokens = lex(
+        "int main() {\n"
+        "  float value = 3.14; // numeric value\n"
+        "  char newline = '\\n';\n"
+        "  string message = \"hello world\";\n"
+        "  if (value >= 3.0 && value != 4.0) { value++; }\n"
+        "  return 0;\n"
+        "}");
+
+    std::vector<std::string> lexemes;
+    for (const Token& token : tokens) {
+        lexemes.push_back(token.lexeme);
+    }
+
+    CHECK(lexemes == std::vector<std::string>{
+        "int", "main", "(", ")", "{", "float", "value", "=", "3.14", ";",
+        "char", "newline", "=", "'\\n'", ";", "string", "message", "=",
+        "\"hello world\"", ";", "if", "(", "value", ">=", "3.0", "&&",
+        "value", "!=", "4.0", ")", "{", "value", "++", ";", "}",
+        "return", "0", ";", "}", ""});
+}
+
+TEST_CASE("Comments disappear from an integrated program token stream",
+          "[lexer][integration][comment]") {
+    const std::string withoutComments =
+        "int x = 10;\n"
+        "int y = x + 20;";
+    const std::string withComments =
+        "int /* declaration */ x = 10; // first value\n"
+        "/* next declaration */ int y = x + /* between */ 20;";
+
+    checkEquivalentTokens(lex(withComments), lex(withoutComments));
+}
+
+TEST_CASE("Longest-match operators remain intact in source context",
+          "[lexer][integration][operator]") {
+    auto tokens = lex("a == b != c <= d >= e && f || g ++ h -- i === j +++ k --- l &&& m ||| n");
+    std::vector<std::string> operators;
+    for (const Token& token : tokens) {
+        if (token.type == TokenType::Operator) {
+            operators.push_back(token.lexeme);
+        }
+    }
+
+    CHECK(operators == std::vector<std::string>{
+        "==", "!=", "<=", ">=", "&&", "||", "++", "--",
+        "==", "=", "++", "+", "--", "-", "&&", "&", "||", "|"});
+}
+
+TEST_CASE("Literals preserve comment markers and escape source text",
+          "[lexer][integration][literal]") {
+    auto tokens = lex("char slash = '/'; char star = '*'; string text = \"// /* */ \\n\";");
+
+    CHECK(tokens[3].type == TokenType::Char);
+    CHECK(tokens[3].lexeme == "'/'");
+    CHECK(tokens[8].type == TokenType::Char);
+    CHECK(tokens[8].lexeme == "'*'");
+    CHECK(tokens[13].type == TokenType::String);
+    CHECK(tokens[13].lexeme == "\"// /* */ \\n\"");
+}
+
+TEST_CASE("Integrated locations and edge cases remain stable", "[lexer][integration][location]") {
+    auto tokens = lex(
+        "int main() {\n"
+        "// ignored line\n"
+        "  int /* across\n"
+        "     lines */ x = 1;\n"
+        "}");
+
+    CHECK(tokens[5].lexeme == "int");
+    CHECK(tokens[5].line == 3);
+    CHECK(tokens[5].column == 3);
+    CHECK(tokens[6].lexeme == "x");
+    CHECK(tokens[6].line == 4);
+    CHECK(tokens[6].column == 15);
+
+    auto empty = lex("");
+    REQUIRE(empty.size() == 1);
+    CHECK(empty[0].type == TokenType::Eof);
+
+    CHECK(isLexerError(lex("\"unterminated")[0]));
+    CHECK(isLexerError(lex("'x")[0]));
+    CHECK(isLexerError(lex("''")[0]));
+    CHECK(isLexerError(lex("/* unterminated")[0]));
+}
+
