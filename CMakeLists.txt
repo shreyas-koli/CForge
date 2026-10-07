@@ -20,6 +20,12 @@ add_executable(cforge
     src/driver/pipeline.cpp
     src/lexer/token.cpp
     src/lexer/lexer.cpp
+    src/ast/ast_node.cpp
+    src/ast/statement.cpp
+    src/ast/expression.cpp
+    src/ast/program.cpp
+    src/ast/function.cpp
+    src/ast/variable_declaration.cpp
 )
 
 # -----------------------------------------------------------------------------
@@ -29,9 +35,11 @@ add_executable(cforge
 #     - tests/test_driver.cpp  : Driver + pipeline unit tests (Day 3)
 #     - tests/test_token.cpp   : Token / TokenType unit tests (Day 4)
 #     - tests/test_lexer.cpp   : Lexer identifier/keyword tests (Day 5)
+#     - tests/test_ast.cpp     : AST architecture tests (Day 11)
 #     - src/driver/pipeline.cpp: Shared with cforge target; main.cpp excluded
 #     - src/lexer/token.cpp    : Shared with cforge target
 #     - src/lexer/lexer.cpp    : Shared with cforge target
+#     - src/ast/*.cpp          : Shared AST implementations
 # -----------------------------------------------------------------------------
 enable_testing()
 include(CTest)
@@ -49,9 +57,16 @@ add_executable(cforge_tests
     tests/test_driver.cpp
     tests/test_token.cpp
     tests/test_lexer.cpp
+    tests/test_ast.cpp
     src/driver/pipeline.cpp
     src/lexer/token.cpp
     src/lexer/lexer.cpp
+    src/ast/ast_node.cpp
+    src/ast/statement.cpp
+    src/ast/expression.cpp
+    src/ast/program.cpp
+    src/ast/function.cpp
+    src/ast/variable_declaration.cpp
 )
 target_link_libraries(cforge_tests PRIVATE Catch2::Catch2)
 
