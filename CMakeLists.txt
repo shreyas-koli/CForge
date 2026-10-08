@@ -26,6 +26,10 @@ add_executable(cforge
     src/ast/program.cpp
     src/ast/function.cpp
     src/ast/variable_declaration.cpp
+    src/ast/literal_expression.cpp
+    src/ast/identifier_expression.cpp
+    src/parser/parser.cpp
+    src/parser/expr.cpp
 )
 
 # -----------------------------------------------------------------------------
@@ -36,10 +40,12 @@ add_executable(cforge
 #     - tests/test_token.cpp   : Token / TokenType unit tests (Day 4)
 #     - tests/test_lexer.cpp   : Lexer identifier/keyword tests (Day 5)
 #     - tests/test_ast.cpp     : AST architecture tests (Day 11)
+#     - tests/test_parser.cpp  : Primary expression parser tests (Day 12)
 #     - src/driver/pipeline.cpp: Shared with cforge target; main.cpp excluded
 #     - src/lexer/token.cpp    : Shared with cforge target
 #     - src/lexer/lexer.cpp    : Shared with cforge target
 #     - src/ast/*.cpp          : Shared AST implementations
+#     - src/parser/*.cpp       : Shared Parser implementations
 # -----------------------------------------------------------------------------
 enable_testing()
 include(CTest)
@@ -58,6 +64,7 @@ add_executable(cforge_tests
     tests/test_token.cpp
     tests/test_lexer.cpp
     tests/test_ast.cpp
+    tests/test_parser.cpp
     src/driver/pipeline.cpp
     src/lexer/token.cpp
     src/lexer/lexer.cpp
@@ -67,6 +74,10 @@ add_executable(cforge_tests
     src/ast/program.cpp
     src/ast/function.cpp
     src/ast/variable_declaration.cpp
+    src/ast/literal_expression.cpp
+    src/ast/identifier_expression.cpp
+    src/parser/parser.cpp
+    src/parser/expr.cpp
 )
 target_link_libraries(cforge_tests PRIVATE Catch2::Catch2)
 
