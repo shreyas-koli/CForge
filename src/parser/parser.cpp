@@ -52,3 +52,10 @@ bool Parser::match(TokenType type) {
     }
     return false;
 }
+
+void Parser::error(const std::string& message) {
+    if (!m_hasError) {
+        m_hasError = true;
+        m_errorMessage = message;
+    }
+}

@@ -1,7 +1,19 @@
 #include "parser/parser.h"
 
 // =============================================================================
-// parsePrimary() — Day 12
+// parseExpression() — Day 13
+// =============================================================================
+//
+// Top-level expression parsing function.
+// For Day 13 (before binary/unary operators are implemented), delegates
+// directly to parsePrimary().
+//
+std::unique_ptr<Expression> Parser::parseExpression() {
+    return parsePrimary();
+}
+
+// =============================================================================
+// parsePrimary() — Day 12 & Day 13
 // =============================================================================
 //
 // Grammar:
@@ -11,9 +23,10 @@
 //       float-literal
 //       char-literal
 //       string-literal
+//       ( expression )
 //
 // Behavior:
-//   If current token matches one of the 5 primary categories, advances the token
+//   If current token matches one of the primary categories, advances the token
 //   stream and returns a std::unique_ptr to the corresponding AST node.
 //   If current token is not a primary expression (or at EOF), returns nullptr
 //   without advancing the token stream.
@@ -58,6 +71,34 @@ std::unique_ptr<Expression> Parser::parsePrimary() {
         advance();
         return std::make_unique<IdentifierExpression>(
             tok.lexeme, SourceLocation{tok.line, tok.column});
+    }
+
+    // 6. Parenthesized Expression: ( expression )
+    if (tok.type == TokenType::Punctuation && tok.lexeme == "(") {
+        advance(); // consume '('
+
+        // Check for empty parentheses: ()
+        if (check(TokenType::Punctuation) && peek().lexeme == ")") {
+            advance(); // consume ')'
+            error("Empty parenthesized expression");
+            return nullptr;
+        }
+
+        std::unique_ptr<Expression> expr = parseExpression();
+        if (!expr) {
+            if (!hasError()) {
+                error("Expected expression after '('");
+            }
+            return nullptr;
+        }
+
+        if (!check(TokenType::Punctuation) || peek().lexeme != ")") {
+            error("Expected ')' after expression");
+            return nullptr;
+        }
+
+        advance(); // consume ')'
+        return expr;
     }
 
     // Not a primary expression: fail cleanly without consuming tokens.

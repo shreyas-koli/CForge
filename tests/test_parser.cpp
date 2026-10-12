@@ -258,3 +258,188 @@ TEST_CASE("parsePrimary: sequential calls consume tokens correctly", "[parser][p
     CHECK(e6 == nullptr);
     CHECK(parser.isAtEnd());
 }
+
+// =============================================================================
+// DAY 13 TESTS — Parenthesized Expressions
+// =============================================================================
+
+// -----------------------------------------------------------------------------
+// 9. Parenthesized Primary Expressions
+// -----------------------------------------------------------------------------
+TEST_CASE("parsePrimary: parenthesized identifier '(x)'", "[parser][paren][identifier]") {
+    Parser parser = makeParser("(x)");
+    auto expr = parser.parsePrimary();
+
+    REQUIRE(expr != nullptr);
+    CHECK_FALSE(parser.hasError());
+
+    auto* id = dynamic_cast<IdentifierExpression*>(expr.get());
+    REQUIRE(id != nullptr);
+    CHECK(id->name() == "x");
+    CHECK(parser.isAtEnd());
+}
+
+TEST_CASE("parsePrimary: parenthesized integer literal '(10)'", "[parser][paren][integer]") {
+    Parser parser = makeParser("(10)");
+    auto expr = parser.parsePrimary();
+
+    REQUIRE(expr != nullptr);
+    CHECK_FALSE(parser.hasError());
+
+    auto* lit = dynamic_cast<LiteralExpression*>(expr.get());
+    REQUIRE(lit != nullptr);
+    CHECK(lit->kind() == LiteralKind::Integer);
+    CHECK(lit->value() == "10");
+    CHECK(parser.isAtEnd());
+}
+
+TEST_CASE("parsePrimary: parenthesized float literal '(3.14)'", "[parser][paren][float]") {
+    Parser parser = makeParser("(3.14)");
+    auto expr = parser.parsePrimary();
+
+    REQUIRE(expr != nullptr);
+    CHECK_FALSE(parser.hasError());
+
+    auto* lit = dynamic_cast<LiteralExpression*>(expr.get());
+    REQUIRE(lit != nullptr);
+    CHECK(lit->kind() == LiteralKind::Float);
+    CHECK(lit->value() == "3.14");
+    CHECK(parser.isAtEnd());
+}
+
+TEST_CASE("parsePrimary: parenthesized char and string literals", "[parser][paren][literals]") {
+    {
+        Parser parser = makeParser("('a')");
+        auto expr = parser.parsePrimary();
+        REQUIRE(expr != nullptr);
+        auto* lit = dynamic_cast<LiteralExpression*>(expr.get());
+        REQUIRE(lit != nullptr);
+        CHECK(lit->kind() == LiteralKind::Char);
+        CHECK(lit->value() == "'a'");
+    }
+    {
+        Parser parser = makeParser("(\"hello\")");
+        auto expr = parser.parsePrimary();
+        REQUIRE(expr != nullptr);
+        auto* lit = dynamic_cast<LiteralExpression*>(expr.get());
+        REQUIRE(lit != nullptr);
+        CHECK(lit->kind() == LiteralKind::String);
+        CHECK(lit->value() == "\"hello\"");
+    }
+}
+
+TEST_CASE("parsePrimary: nested parentheses '((x))' and '(((42)))'", "[parser][paren][nested]") {
+    {
+        Parser parser = makeParser("((x))");
+        auto expr = parser.parsePrimary();
+        REQUIRE(expr != nullptr);
+        CHECK_FALSE(parser.hasError());
+
+        auto* id = dynamic_cast<IdentifierExpression*>(expr.get());
+        REQUIRE(id != nullptr);
+        CHECK(id->name() == "x");
+        CHECK(parser.isAtEnd());
+    }
+    {
+        Parser parser = makeParser("(((42)))");
+        auto expr = parser.parsePrimary();
+        REQUIRE(expr != nullptr);
+        CHECK_FALSE(parser.hasError());
+
+        auto* lit = dynamic_cast<LiteralExpression*>(expr.get());
+        REQUIRE(lit != nullptr);
+        CHECK(lit->kind() == LiteralKind::Integer);
+        CHECK(lit->value() == "42");
+        CHECK(parser.isAtEnd());
+    }
+}
+
+TEST_CASE("parseExpression: top-level parenthesized expression delegator", "[parser][paren][expression]") {
+    Parser parser = makeParser("(foo)");
+    auto expr = parser.parseExpression();
+
+    REQUIRE(expr != nullptr);
+    CHECK_FALSE(parser.hasError());
+
+    auto* id = dynamic_cast<IdentifierExpression*>(expr.get());
+    REQUIRE(id != nullptr);
+    CHECK(id->name() == "foo");
+    CHECK(parser.isAtEnd());
+}
+
+// -----------------------------------------------------------------------------
+// 10. Parenthesized Expression Limitations & Error Handling
+// -----------------------------------------------------------------------------
+TEST_CASE("parsePrimary: '(a + b)' stops before unsupported binary operator in Day 13", "[parser][paren][limitation]") {
+    // In Day 13, binary operators like '+' are not yet implemented.
+    // parseExpression() delegates to parsePrimary(), which parses 'a'.
+    // The paren parser expects ')' after 'a', but encounters '+'.
+    // Therefore, it correctly fails with an error rather than faking support.
+    Parser parser = makeParser("(a + b)");
+    auto expr = parser.parsePrimary();
+
+    CHECK(expr == nullptr);
+    CHECK(parser.hasError());
+    CHECK(parser.errorMessage() == "Expected ')' after expression");
+}
+
+TEST_CASE("parsePrimary: unclosed parenthesis '(x' reports missing ')'", "[parser][paren][error]") {
+    Parser parser = makeParser("(x");
+    auto expr = parser.parsePrimary();
+
+    CHECK(expr == nullptr);
+    CHECK(parser.hasError());
+    CHECK(parser.errorMessage() == "Expected ')' after expression");
+}
+
+TEST_CASE("parsePrimary: unclosed nested parenthesis '((x)' reports missing ')'", "[parser][paren][error]") {
+    Parser parser = makeParser("((x)");
+    auto expr = parser.parsePrimary();
+
+    CHECK(expr == nullptr);
+    CHECK(parser.hasError());
+    CHECK(parser.errorMessage() == "Expected ')' after expression");
+}
+
+TEST_CASE("parsePrimary: unexpected closing parenthesis 'x)' leaves ')' for caller", "[parser][paren][error]") {
+    Parser parser = makeParser("x)");
+    auto expr = parser.parsePrimary();
+
+    // 'x' is parsed successfully as an identifier
+    REQUIRE(expr != nullptr);
+    CHECK_FALSE(parser.hasError());
+    auto* id = dynamic_cast<IdentifierExpression*>(expr.get());
+    REQUIRE(id != nullptr);
+    CHECK(id->name() == "x");
+
+    // The trailing ')' is left unconsumed in the token stream
+    CHECK_FALSE(parser.isAtEnd());
+    CHECK(parser.peek().lexeme == ")");
+    CHECK(parser.peek().type == TokenType::Punctuation);
+
+    // Subsequent parsePrimary() call on ')' fails cleanly without consuming ')'
+    auto expr2 = parser.parsePrimary();
+    CHECK(expr2 == nullptr);
+    CHECK(parser.peek().lexeme == ")");
+}
+
+TEST_CASE("parsePrimary: empty parentheses '()' fails cleanly", "[parser][paren][error]") {
+    Parser parser = makeParser("()");
+    auto expr = parser.parsePrimary();
+
+    CHECK(expr == nullptr);
+    CHECK(parser.hasError());
+    CHECK(parser.errorMessage() == "Empty parenthesized expression");
+    // Verifies '()' was consumed cleanly without consuming further tokens
+    CHECK(parser.isAtEnd());
+}
+
+TEST_CASE("parsePrimary: invalid enclosed syntax '(+' fails cleanly", "[parser][paren][error]") {
+    Parser parser = makeParser("(+");
+    auto expr = parser.parsePrimary();
+
+    CHECK(expr == nullptr);
+    CHECK(parser.hasError());
+    CHECK(parser.errorMessage() == "Expected expression after '('");
+}
+
