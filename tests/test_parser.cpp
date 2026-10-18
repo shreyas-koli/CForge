@@ -370,17 +370,26 @@ TEST_CASE("parseExpression: top-level parenthesized expression delegator", "[par
 // -----------------------------------------------------------------------------
 // 10. Parenthesized Expression Limitations & Error Handling
 // -----------------------------------------------------------------------------
-TEST_CASE("parsePrimary: '(a + b)' stops before unsupported binary operator in Day 13", "[parser][paren][limitation]") {
-    // In Day 13, binary operators like '+' are not yet implemented.
-    // parseExpression() delegates to parsePrimary(), which parses 'a'.
-    // The paren parser expects ')' after 'a', but encounters '+'.
-    // Therefore, it correctly fails with an error rather than faking support.
+TEST_CASE("parsePrimary: '(a + b)' parses binary expression in parentheses", "[parser][paren][binary]") {
     Parser parser = makeParser("(a + b)");
     auto expr = parser.parsePrimary();
 
-    CHECK(expr == nullptr);
-    CHECK(parser.hasError());
-    CHECK(parser.errorMessage() == "Expected ')' after expression");
+    REQUIRE(expr != nullptr);
+    CHECK_FALSE(parser.hasError());
+
+    auto* bin = dynamic_cast<BinaryExpr*>(expr.get());
+    REQUIRE(bin != nullptr);
+    CHECK(bin->op() == "+");
+
+    auto* left = dynamic_cast<const IdentifierExpression*>(bin->left());
+    REQUIRE(left != nullptr);
+    CHECK(left->name() == "a");
+
+    auto* right = dynamic_cast<const IdentifierExpression*>(bin->right());
+    REQUIRE(right != nullptr);
+    CHECK(right->name() == "b");
+
+    CHECK(parser.isAtEnd());
 }
 
 TEST_CASE("parsePrimary: unclosed parenthesis '(x' reports missing ')'", "[parser][paren][error]") {
@@ -441,5 +450,402 @@ TEST_CASE("parsePrimary: invalid enclosed syntax '(+' fails cleanly", "[parser][
     CHECK(expr == nullptr);
     CHECK(parser.hasError());
     CHECK(parser.errorMessage() == "Expected expression after '('");
+}
+
+// =============================================================================
+// DAY 14 TESTS — Binary Expressions
+// =============================================================================
+
+// -----------------------------------------------------------------------------
+// 11. Basic Binary Expressions (+, -, *, /)
+// -----------------------------------------------------------------------------
+TEST_CASE("parseExpression: binary addition 'a + b'", "[parser][binary]") {
+    Parser parser = makeParser("a + b");
+    auto expr = parser.parseExpression();
+
+    REQUIRE(expr != nullptr);
+    CHECK_FALSE(parser.hasError());
+
+    auto* bin = dynamic_cast<BinaryExpr*>(expr.get());
+    REQUIRE(bin != nullptr);
+    CHECK(bin->op() == "+");
+    CHECK(bin->getOp() == "+");
+
+    auto* left = dynamic_cast<const IdentifierExpression*>(bin->left());
+    REQUIRE(left != nullptr);
+    CHECK(left->name() == "a");
+
+    auto* right = dynamic_cast<const IdentifierExpression*>(bin->right());
+    REQUIRE(right != nullptr);
+    CHECK(right->name() == "b");
+
+    CHECK(parser.isAtEnd());
+}
+
+TEST_CASE("parseExpression: binary subtraction 'a - b'", "[parser][binary]") {
+    Parser parser = makeParser("a - b");
+    auto expr = parser.parseExpression();
+
+    REQUIRE(expr != nullptr);
+    CHECK_FALSE(parser.hasError());
+
+    auto* bin = dynamic_cast<BinaryExpr*>(expr.get());
+    REQUIRE(bin != nullptr);
+    CHECK(bin->op() == "-");
+
+    auto* left = dynamic_cast<const IdentifierExpression*>(bin->left());
+    REQUIRE(left != nullptr);
+    CHECK(left->name() == "a");
+
+    auto* right = dynamic_cast<const IdentifierExpression*>(bin->right());
+    REQUIRE(right != nullptr);
+    CHECK(right->name() == "b");
+
+    CHECK(parser.isAtEnd());
+}
+
+TEST_CASE("parseExpression: binary multiplication 'a * b'", "[parser][binary]") {
+    Parser parser = makeParser("a * b");
+    auto expr = parser.parseExpression();
+
+    REQUIRE(expr != nullptr);
+    CHECK_FALSE(parser.hasError());
+
+    auto* bin = dynamic_cast<BinaryExpr*>(expr.get());
+    REQUIRE(bin != nullptr);
+    CHECK(bin->op() == "*");
+
+    auto* left = dynamic_cast<const IdentifierExpression*>(bin->left());
+    REQUIRE(left != nullptr);
+    CHECK(left->name() == "a");
+
+    auto* right = dynamic_cast<const IdentifierExpression*>(bin->right());
+    REQUIRE(right != nullptr);
+    CHECK(right->name() == "b");
+
+    CHECK(parser.isAtEnd());
+}
+
+TEST_CASE("parseExpression: binary division 'a / b'", "[parser][binary]") {
+    Parser parser = makeParser("a / b");
+    auto expr = parser.parseExpression();
+
+    REQUIRE(expr != nullptr);
+    CHECK_FALSE(parser.hasError());
+
+    auto* bin = dynamic_cast<BinaryExpr*>(expr.get());
+    REQUIRE(bin != nullptr);
+    CHECK(bin->op() == "/");
+
+    auto* left = dynamic_cast<const IdentifierExpression*>(bin->left());
+    REQUIRE(left != nullptr);
+    CHECK(left->name() == "a");
+
+    auto* right = dynamic_cast<const IdentifierExpression*>(bin->right());
+    REQUIRE(right != nullptr);
+    CHECK(right->name() == "b");
+
+    CHECK(parser.isAtEnd());
+}
+
+TEST_CASE("parseExpression: binary expression with numeric literals '10 + 20'", "[parser][binary]") {
+    Parser parser = makeParser("10 + 20");
+    auto expr = parser.parseExpression();
+
+    REQUIRE(expr != nullptr);
+    CHECK_FALSE(parser.hasError());
+
+    auto* bin = dynamic_cast<BinaryExpr*>(expr.get());
+    REQUIRE(bin != nullptr);
+    CHECK(bin->op() == "+");
+
+    auto* left = dynamic_cast<const LiteralExpression*>(bin->left());
+    REQUIRE(left != nullptr);
+    CHECK(left->kind() == LiteralKind::Integer);
+    CHECK(left->value() == "10");
+
+    auto* right = dynamic_cast<const LiteralExpression*>(bin->right());
+    REQUIRE(right != nullptr);
+    CHECK(right->kind() == LiteralKind::Integer);
+    CHECK(right->value() == "20");
+
+    CHECK(parser.isAtEnd());
+}
+
+// -----------------------------------------------------------------------------
+// 12. Naive Left-Associativity and Precedence Behavior
+// -----------------------------------------------------------------------------
+TEST_CASE("parseExpression: left-associativity 'a + b + c'", "[parser][binary][associativity]") {
+    Parser parser = makeParser("a + b + c");
+    auto expr = parser.parseExpression();
+
+    REQUIRE(expr != nullptr);
+    CHECK_FALSE(parser.hasError());
+
+    // Root is BinaryExpr(+)
+    auto* root = dynamic_cast<BinaryExpr*>(expr.get());
+    REQUIRE(root != nullptr);
+    CHECK(root->op() == "+");
+
+    // Left child is BinaryExpr(+) for "a + b"
+    auto* leftBin = dynamic_cast<const BinaryExpr*>(root->left());
+    REQUIRE(leftBin != nullptr);
+    CHECK(leftBin->op() == "+");
+
+    auto* leftA = dynamic_cast<const IdentifierExpression*>(leftBin->left());
+    REQUIRE(leftA != nullptr);
+    CHECK(leftA->name() == "a");
+
+    auto* rightB = dynamic_cast<const IdentifierExpression*>(leftBin->right());
+    REQUIRE(rightB != nullptr);
+    CHECK(rightB->name() == "b");
+
+    // Right child is Identifier(c)
+    auto* rightC = dynamic_cast<const IdentifierExpression*>(root->right());
+    REQUIRE(rightC != nullptr);
+    CHECK(rightC->name() == "c");
+
+    CHECK(parser.isAtEnd());
+}
+
+TEST_CASE("parseExpression: naive left-to-right grouping 'a + b * c' -> (a + b) * c", "[parser][binary][precedence]") {
+    // Under Day 14 naive parsing (no precedence), "a + b * c" groups as "((a + b) * c)"
+    Parser parser = makeParser("a + b * c");
+    auto expr = parser.parseExpression();
+
+    REQUIRE(expr != nullptr);
+    CHECK_FALSE(parser.hasError());
+
+    // Root is BinaryExpr(*)
+    auto* root = dynamic_cast<BinaryExpr*>(expr.get());
+    REQUIRE(root != nullptr);
+    CHECK(root->op() == "*");
+
+    // Left child is BinaryExpr(+) for "a + b"
+    auto* leftBin = dynamic_cast<const BinaryExpr*>(root->left());
+    REQUIRE(leftBin != nullptr);
+    CHECK(leftBin->op() == "+");
+
+    auto* leftA = dynamic_cast<const IdentifierExpression*>(leftBin->left());
+    REQUIRE(leftA != nullptr);
+    CHECK(leftA->name() == "a");
+
+    auto* rightB = dynamic_cast<const IdentifierExpression*>(leftBin->right());
+    REQUIRE(rightB != nullptr);
+    CHECK(rightB->name() == "b");
+
+    // Right child is Identifier(c)
+    auto* rightC = dynamic_cast<const IdentifierExpression*>(root->right());
+    REQUIRE(rightC != nullptr);
+    CHECK(rightC->name() == "c");
+
+    CHECK(parser.isAtEnd());
+}
+
+TEST_CASE("parseExpression: naive left-to-right grouping 'a * b + c' -> (a * b) + c", "[parser][binary][precedence]") {
+    Parser parser = makeParser("a * b + c");
+    auto expr = parser.parseExpression();
+
+    REQUIRE(expr != nullptr);
+    CHECK_FALSE(parser.hasError());
+
+    // Root is BinaryExpr(+)
+    auto* root = dynamic_cast<BinaryExpr*>(expr.get());
+    REQUIRE(root != nullptr);
+    CHECK(root->op() == "+");
+
+    // Left child is BinaryExpr(*) for "a * b"
+    auto* leftBin = dynamic_cast<const BinaryExpr*>(root->left());
+    REQUIRE(leftBin != nullptr);
+    CHECK(leftBin->op() == "*");
+
+    auto* leftA = dynamic_cast<const IdentifierExpression*>(leftBin->left());
+    REQUIRE(leftA != nullptr);
+    CHECK(leftA->name() == "a");
+
+    auto* rightB = dynamic_cast<const IdentifierExpression*>(leftBin->right());
+    REQUIRE(rightB != nullptr);
+    CHECK(rightB->name() == "b");
+
+    // Right child is Identifier(c)
+    auto* rightC = dynamic_cast<const IdentifierExpression*>(root->right());
+    REQUIRE(rightC != nullptr);
+    CHECK(rightC->name() == "c");
+
+    CHECK(parser.isAtEnd());
+}
+
+// -----------------------------------------------------------------------------
+// 13. Parentheses Interaction with Binary Expressions
+// -----------------------------------------------------------------------------
+TEST_CASE("parseExpression: '(a + b) * c' respects parentheses", "[parser][binary][paren]") {
+    Parser parser = makeParser("(a + b) * c");
+    auto expr = parser.parseExpression();
+
+    REQUIRE(expr != nullptr);
+    CHECK_FALSE(parser.hasError());
+
+    // Root is BinaryExpr(*)
+    auto* root = dynamic_cast<BinaryExpr*>(expr.get());
+    REQUIRE(root != nullptr);
+    CHECK(root->op() == "*");
+
+    // Left child is BinaryExpr(+) from inside parens
+    auto* leftBin = dynamic_cast<const BinaryExpr*>(root->left());
+    REQUIRE(leftBin != nullptr);
+    CHECK(leftBin->op() == "+");
+
+    auto* leftA = dynamic_cast<const IdentifierExpression*>(leftBin->left());
+    REQUIRE(leftA != nullptr);
+    CHECK(leftA->name() == "a");
+
+    auto* rightB = dynamic_cast<const IdentifierExpression*>(leftBin->right());
+    REQUIRE(rightB != nullptr);
+    CHECK(rightB->name() == "b");
+
+    // Right child is Identifier(c)
+    auto* rightC = dynamic_cast<const IdentifierExpression*>(root->right());
+    REQUIRE(rightC != nullptr);
+    CHECK(rightC->name() == "c");
+
+    CHECK(parser.isAtEnd());
+}
+
+TEST_CASE("parseExpression: 'a * (b + c)' respects parentheses on right operand", "[parser][binary][paren]") {
+    Parser parser = makeParser("a * (b + c)");
+    auto expr = parser.parseExpression();
+
+    REQUIRE(expr != nullptr);
+    CHECK_FALSE(parser.hasError());
+
+    // Root is BinaryExpr(*)
+    auto* root = dynamic_cast<BinaryExpr*>(expr.get());
+    REQUIRE(root != nullptr);
+    CHECK(root->op() == "*");
+
+    // Left child is Identifier(a)
+    auto* leftA = dynamic_cast<const IdentifierExpression*>(root->left());
+    REQUIRE(leftA != nullptr);
+    CHECK(leftA->name() == "a");
+
+    // Right child is BinaryExpr(+) from inside parens
+    auto* rightBin = dynamic_cast<const BinaryExpr*>(root->right());
+    REQUIRE(rightBin != nullptr);
+    CHECK(rightBin->op() == "+");
+
+    auto* leftB = dynamic_cast<const IdentifierExpression*>(rightBin->left());
+    REQUIRE(leftB != nullptr);
+    CHECK(leftB->name() == "b");
+
+    auto* rightC = dynamic_cast<const IdentifierExpression*>(rightBin->right());
+    REQUIRE(rightC != nullptr);
+    CHECK(rightC->name() == "c");
+
+    CHECK(parser.isAtEnd());
+}
+
+TEST_CASE("parseExpression: nested binary in parens '((a + b) * c) / d'", "[parser][binary][paren]") {
+    Parser parser = makeParser("((a + b) * c) / d");
+    auto expr = parser.parseExpression();
+
+    REQUIRE(expr != nullptr);
+    CHECK_FALSE(parser.hasError());
+
+    // Root is BinaryExpr(/)
+    auto* root = dynamic_cast<BinaryExpr*>(expr.get());
+    REQUIRE(root != nullptr);
+    CHECK(root->op() == "/");
+
+    auto* leftMul = dynamic_cast<const BinaryExpr*>(root->left());
+    REQUIRE(leftMul != nullptr);
+    CHECK(leftMul->op() == "*");
+
+    auto* leftAdd = dynamic_cast<const BinaryExpr*>(leftMul->left());
+    REQUIRE(leftAdd != nullptr);
+    CHECK(leftAdd->op() == "+");
+
+    auto* rightD = dynamic_cast<const IdentifierExpression*>(root->right());
+    REQUIRE(rightD != nullptr);
+    CHECK(rightD->name() == "d");
+
+    CHECK(parser.isAtEnd());
+}
+
+// -----------------------------------------------------------------------------
+// 14. Binary Expression Error Handling
+// -----------------------------------------------------------------------------
+TEST_CASE("parseExpression: missing right operand 'a +' at EOF fails cleanly", "[parser][binary][error]") {
+    Parser parser = makeParser("a +");
+    auto expr = parser.parseExpression();
+
+    CHECK(expr == nullptr);
+    CHECK(parser.hasError());
+    CHECK(parser.errorMessage() == "Expected expression after '+'");
+    CHECK(parser.isAtEnd());
+}
+
+TEST_CASE("parseExpression: missing right operand 'a -' at EOF fails cleanly", "[parser][binary][error]") {
+    Parser parser = makeParser("a -");
+    auto expr = parser.parseExpression();
+
+    CHECK(expr == nullptr);
+    CHECK(parser.hasError());
+    CHECK(parser.errorMessage() == "Expected expression after '-'");
+    CHECK(parser.isAtEnd());
+}
+
+TEST_CASE("parseExpression: missing right operand before punctuation 'a * ;' fails cleanly", "[parser][binary][error]") {
+    Parser parser = makeParser("a * ;");
+    auto expr = parser.parseExpression();
+
+    CHECK(expr == nullptr);
+    CHECK(parser.hasError());
+    CHECK(parser.errorMessage() == "Expected expression after '*'");
+    // Semicolon was not consumed
+    CHECK_FALSE(parser.isAtEnd());
+    CHECK(parser.peek().lexeme == ";");
+    CHECK(parser.peek().type == TokenType::Punctuation);
+}
+
+TEST_CASE("parseExpression: leading operator '+ a' fails cleanly without consuming '+'", "[parser][binary][error]") {
+    Parser parser = makeParser("+ a");
+    auto expr = parser.parseExpression();
+
+    CHECK(expr == nullptr);
+    CHECK_FALSE(parser.isAtEnd());
+    CHECK(parser.peek().lexeme == "+");
+    CHECK(parser.peek().type == TokenType::Operator);
+}
+
+// -----------------------------------------------------------------------------
+// 15. BinaryExpr AST Node Unit Verification
+// -----------------------------------------------------------------------------
+TEST_CASE("BinaryExpr: AST node accessors and toString", "[ast][binary]") {
+    auto left = std::make_unique<IdentifierExpression>("x", SourceLocation{1, 1});
+    auto right = std::make_unique<LiteralExpression>(LiteralKind::Integer, "42", SourceLocation{1, 5});
+
+    BinaryExpr bin("+", std::move(left), std::move(right), SourceLocation{1, 1});
+    CHECK(bin.op() == "+");
+    CHECK(bin.getOp() == "+");
+    CHECK(bin.location().line == 1);
+    CHECK(bin.location().column == 1);
+
+    REQUIRE(bin.left() != nullptr);
+    REQUIRE(bin.getLeft() != nullptr);
+    CHECK(bin.left()->toString() == "IdentifierExpression(x)");
+
+    REQUIRE(bin.right() != nullptr);
+    REQUIRE(bin.getRight() != nullptr);
+    CHECK(bin.right()->toString() == "LiteralExpression(Integer, 42)");
+
+    CHECK(bin.toString() == "BinaryExpr(+, IdentifierExpression(x), LiteralExpression(Integer, 42))");
+
+    auto takenLeft = bin.takeLeft();
+    CHECK(bin.left() == nullptr);
+    CHECK(takenLeft->toString() == "IdentifierExpression(x)");
+
+    auto takenRight = bin.takeRight();
+    CHECK(bin.right() == nullptr);
+    CHECK(takenRight->toString() == "LiteralExpression(Integer, 42)");
 }
 

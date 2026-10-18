@@ -28,6 +28,7 @@ add_executable(cforge
     src/ast/variable_declaration.cpp
     src/ast/literal_expression.cpp
     src/ast/identifier_expression.cpp
+    src/ast/binary_expr.cpp
     src/parser/parser.cpp
     src/parser/expr.cpp
 )
@@ -76,6 +77,7 @@ add_executable(cforge_tests
     src/ast/variable_declaration.cpp
     src/ast/literal_expression.cpp
     src/ast/identifier_expression.cpp
+    src/ast/binary_expr.cpp
     src/parser/parser.cpp
     src/parser/expr.cpp
 )

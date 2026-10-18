@@ -1,15 +1,45 @@
 #include "parser/parser.h"
 
 // =============================================================================
-// parseExpression() — Day 13
+// parseExpression() — Day 13 & Day 14
 // =============================================================================
 //
 // Top-level expression parsing function.
-// For Day 13 (before binary/unary operators are implemented), delegates
-// directly to parsePrimary().
+// Day 14 implements naive left-associative binary expression parsing:
+//   expression:
+//       primary-expression ( ('+' | '-' | '*' | '/') primary-expression )*
 //
+// Grouping is strictly left-to-right without operator precedence:
+//   "a + b * c" -> (a + b) * c
+//
+static bool isBinaryOperator(const Token& tok) {
+    if (tok.type != TokenType::Operator) {
+        return false;
+    }
+    return tok.lexeme == "+" || tok.lexeme == "-" ||
+           tok.lexeme == "*" || tok.lexeme == "/";
+}
+
 std::unique_ptr<Expression> Parser::parseExpression() {
-    return parsePrimary();
+    std::unique_ptr<Expression> left = parsePrimary();
+    if (!left) {
+        return nullptr;
+    }
+
+    while (!isAtEnd() && isBinaryOperator(peek())) {
+        Token opToken = advance();
+        SourceLocation loc = left->location();
+
+        std::unique_ptr<Expression> right = parsePrimary();
+        if (!right) {
+            error("Expected expression after '" + opToken.lexeme + "'");
+            return nullptr;
+        }
+
+        left = std::make_unique<BinaryExpr>(opToken.lexeme, std::move(left), std::move(right), loc);
+    }
+
+    return left;
 }
 
 // =============================================================================

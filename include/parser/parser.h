@@ -19,8 +19,9 @@ public:
     explicit Parser(std::vector<Token> tokens);
     explicit Parser(Lexer& lexer);
 
-    // Expression parsing
-    // Top-level expression entry point (Day 13 delegates to parsePrimary)
+    // Expression parsing (Day 13 & Day 14)
+    // Top-level expression entry point.
+    // Day 14: naive left-associative binary expression parsing (+, -, *, /).
     std::unique_ptr<Expression> parseExpression();
 
     // Primary expression parsing (Day 12 & Day 13)

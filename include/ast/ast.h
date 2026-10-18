@@ -8,3 +8,4 @@
 #include "ast/variable_declaration.h"
 #include "ast/literal_expression.h"
 #include "ast/identifier_expression.h"
+#include "ast/binary_expr.h"
