@@ -1,45 +1,63 @@
 #include "parser/parser.h"
 
 // =============================================================================
-// parseExpression() — Day 13 & Day 14
+// parseExpression() & parseBinaryExpression() — Day 15 Operator Precedence
 // =============================================================================
 //
-// Top-level expression parsing function.
-// Day 14 implements naive left-associative binary expression parsing:
-//   expression:
-//       primary-expression ( ('+' | '-' | '*' | '/') primary-expression )*
+// Precedence-climbing binary expression parser.
+// Precedence levels:
+//   Level 2 (higher): '*', '/'
+//   Level 1 (lower):  '+', '-'
 //
-// Grouping is strictly left-to-right without operator precedence:
-//   "a + b * c" -> (a + b) * c
+// All four operators are left-associative. Left-associativity is preserved by
+// passing (precedence + 1) as the minimum precedence for the right-hand operand.
 //
-static bool isBinaryOperator(const Token& tok) {
+static int getOperatorPrecedence(const Token& tok) {
     if (tok.type != TokenType::Operator) {
-        return false;
+        return 0;
     }
-    return tok.lexeme == "+" || tok.lexeme == "-" ||
-           tok.lexeme == "*" || tok.lexeme == "/";
+    if (tok.lexeme == "*" || tok.lexeme == "/") {
+        return 2;
+    }
+    if (tok.lexeme == "+" || tok.lexeme == "-") {
+        return 1;
+    }
+    return 0;
 }
 
-std::unique_ptr<Expression> Parser::parseExpression() {
+std::unique_ptr<Expression> Parser::parseBinaryExpression(int minPrecedence) {
     std::unique_ptr<Expression> left = parsePrimary();
     if (!left) {
         return nullptr;
     }
 
-    while (!isAtEnd() && isBinaryOperator(peek())) {
-        Token opToken = advance();
+    while (!isAtEnd()) {
+        const Token& opToken = peek();
+        int prec = getOperatorPrecedence(opToken);
+        if (prec < minPrecedence) {
+            break;
+        }
+
+        Token op = advance();
         SourceLocation loc = left->location();
 
-        std::unique_ptr<Expression> right = parsePrimary();
+        // Left-associative: pass prec + 1
+        std::unique_ptr<Expression> right = parseBinaryExpression(prec + 1);
         if (!right) {
-            error("Expected expression after '" + opToken.lexeme + "'");
+            if (!hasError()) {
+                error("Expected expression after '" + op.lexeme + "'");
+            }
             return nullptr;
         }
 
-        left = std::make_unique<BinaryExpr>(opToken.lexeme, std::move(left), std::move(right), loc);
+        left = std::make_unique<BinaryExpr>(op.lexeme, std::move(left), std::move(right), loc);
     }
 
     return left;
+}
+
+std::unique_ptr<Expression> Parser::parseExpression() {
+    return parseBinaryExpression(1);
 }
 
 // =============================================================================

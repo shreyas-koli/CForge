@@ -573,7 +573,7 @@ TEST_CASE("parseExpression: binary expression with numeric literals '10 + 20'", 
 }
 
 // -----------------------------------------------------------------------------
-// 12. Naive Left-Associativity and Precedence Behavior
+// 12. Operator Precedence and Left-Associativity (Day 15)
 // -----------------------------------------------------------------------------
 TEST_CASE("parseExpression: left-associativity 'a + b + c'", "[parser][binary][associativity]") {
     Parser parser = makeParser("a + b + c");
@@ -608,41 +608,41 @@ TEST_CASE("parseExpression: left-associativity 'a + b + c'", "[parser][binary][a
     CHECK(parser.isAtEnd());
 }
 
-TEST_CASE("parseExpression: naive left-to-right grouping 'a + b * c' -> (a + b) * c", "[parser][binary][precedence]") {
-    // Under Day 14 naive parsing (no precedence), "a + b * c" groups as "((a + b) * c)"
+TEST_CASE("parseExpression: operator precedence 'a + b * c' -> a + (b * c)", "[parser][binary][precedence]") {
+    // Under Day 15 precedence climbing, '*' binds tighter than '+': "a + (b * c)"
     Parser parser = makeParser("a + b * c");
     auto expr = parser.parseExpression();
 
     REQUIRE(expr != nullptr);
     CHECK_FALSE(parser.hasError());
 
-    // Root is BinaryExpr(*)
+    // Root is BinaryExpr(+)
     auto* root = dynamic_cast<BinaryExpr*>(expr.get());
     REQUIRE(root != nullptr);
-    CHECK(root->op() == "*");
+    CHECK(root->op() == "+");
 
-    // Left child is BinaryExpr(+) for "a + b"
-    auto* leftBin = dynamic_cast<const BinaryExpr*>(root->left());
-    REQUIRE(leftBin != nullptr);
-    CHECK(leftBin->op() == "+");
-
-    auto* leftA = dynamic_cast<const IdentifierExpression*>(leftBin->left());
+    // Left child is Identifier(a)
+    auto* leftA = dynamic_cast<const IdentifierExpression*>(root->left());
     REQUIRE(leftA != nullptr);
     CHECK(leftA->name() == "a");
 
-    auto* rightB = dynamic_cast<const IdentifierExpression*>(leftBin->right());
-    REQUIRE(rightB != nullptr);
-    CHECK(rightB->name() == "b");
+    // Right child is BinaryExpr(*) for "b * c"
+    auto* rightBin = dynamic_cast<const BinaryExpr*>(root->right());
+    REQUIRE(rightBin != nullptr);
+    CHECK(rightBin->op() == "*");
 
-    // Right child is Identifier(c)
-    auto* rightC = dynamic_cast<const IdentifierExpression*>(root->right());
+    auto* leftB = dynamic_cast<const IdentifierExpression*>(rightBin->left());
+    REQUIRE(leftB != nullptr);
+    CHECK(leftB->name() == "b");
+
+    auto* rightC = dynamic_cast<const IdentifierExpression*>(rightBin->right());
     REQUIRE(rightC != nullptr);
     CHECK(rightC->name() == "c");
 
     CHECK(parser.isAtEnd());
 }
 
-TEST_CASE("parseExpression: naive left-to-right grouping 'a * b + c' -> (a * b) + c", "[parser][binary][precedence]") {
+TEST_CASE("parseExpression: operator precedence 'a * b + c' -> (a * b) + c", "[parser][binary][precedence]") {
     Parser parser = makeParser("a * b + c");
     auto expr = parser.parseExpression();
 
@@ -671,6 +671,191 @@ TEST_CASE("parseExpression: naive left-to-right grouping 'a * b + c' -> (a * b) 
     auto* rightC = dynamic_cast<const IdentifierExpression*>(root->right());
     REQUIRE(rightC != nullptr);
     CHECK(rightC->name() == "c");
+
+    CHECK(parser.isAtEnd());
+}
+
+TEST_CASE("parseExpression: left-associativity 'a - b - c' -> (a - b) - c", "[parser][binary][associativity]") {
+    Parser parser = makeParser("a - b - c");
+    auto expr = parser.parseExpression();
+
+    REQUIRE(expr != nullptr);
+    CHECK_FALSE(parser.hasError());
+
+    // Root is BinaryExpr(-)
+    auto* root = dynamic_cast<BinaryExpr*>(expr.get());
+    REQUIRE(root != nullptr);
+    CHECK(root->op() == "-");
+
+    // Left child is BinaryExpr(-) for "a - b"
+    auto* leftBin = dynamic_cast<const BinaryExpr*>(root->left());
+    REQUIRE(leftBin != nullptr);
+    CHECK(leftBin->op() == "-");
+
+    auto* leftA = dynamic_cast<const IdentifierExpression*>(leftBin->left());
+    REQUIRE(leftA != nullptr);
+    CHECK(leftA->name() == "a");
+
+    auto* rightB = dynamic_cast<const IdentifierExpression*>(leftBin->right());
+    REQUIRE(rightB != nullptr);
+    CHECK(rightB->name() == "b");
+
+    // Right child is Identifier(c)
+    auto* rightC = dynamic_cast<const IdentifierExpression*>(root->right());
+    REQUIRE(rightC != nullptr);
+    CHECK(rightC->name() == "c");
+
+    CHECK(parser.isAtEnd());
+}
+
+TEST_CASE("parseExpression: mixed precedence and associativity 'a + b / c * d' -> a + ((b / c) * d)", "[parser][binary][precedence]") {
+    // '/' and '*' have same precedence (2) and are left-associative: "((b / c) * d)"
+    // '+' has lower precedence (1): "a + ((b / c) * d)"
+    Parser parser = makeParser("a + b / c * d");
+    auto expr = parser.parseExpression();
+
+    REQUIRE(expr != nullptr);
+    CHECK_FALSE(parser.hasError());
+
+    // Root is BinaryExpr(+)
+    auto* root = dynamic_cast<BinaryExpr*>(expr.get());
+    REQUIRE(root != nullptr);
+    CHECK(root->op() == "+");
+
+    // Left child is Identifier(a)
+    auto* leftA = dynamic_cast<const IdentifierExpression*>(root->left());
+    REQUIRE(leftA != nullptr);
+    CHECK(leftA->name() == "a");
+
+    // Right child is BinaryExpr(*) for "(b / c) * d"
+    auto* rightMul = dynamic_cast<const BinaryExpr*>(root->right());
+    REQUIRE(rightMul != nullptr);
+    CHECK(rightMul->op() == "*");
+
+    // Left child of '*' is BinaryExpr(/) for "b / c"
+    auto* leftDiv = dynamic_cast<const BinaryExpr*>(rightMul->left());
+    REQUIRE(leftDiv != nullptr);
+    CHECK(leftDiv->op() == "/");
+
+    auto* leftB = dynamic_cast<const IdentifierExpression*>(leftDiv->left());
+    REQUIRE(leftB != nullptr);
+    CHECK(leftB->name() == "b");
+
+    auto* rightC = dynamic_cast<const IdentifierExpression*>(leftDiv->right());
+    REQUIRE(rightC != nullptr);
+    CHECK(rightC->name() == "c");
+
+    // Right child of '*' is Identifier(d)
+    auto* rightD = dynamic_cast<const IdentifierExpression*>(rightMul->right());
+    REQUIRE(rightD != nullptr);
+    CHECK(rightD->name() == "d");
+
+    CHECK(parser.isAtEnd());
+}
+
+TEST_CASE("parseExpression: mixed operators 'a * b - c / d' -> (a * b) - (c / d)", "[parser][binary][precedence]") {
+    Parser parser = makeParser("a * b - c / d");
+    auto expr = parser.parseExpression();
+
+    REQUIRE(expr != nullptr);
+    CHECK_FALSE(parser.hasError());
+
+    // Root is BinaryExpr(-)
+    auto* root = dynamic_cast<BinaryExpr*>(expr.get());
+    REQUIRE(root != nullptr);
+    CHECK(root->op() == "-");
+
+    // Left child is BinaryExpr(*) for "a * b"
+    auto* leftMul = dynamic_cast<const BinaryExpr*>(root->left());
+    REQUIRE(leftMul != nullptr);
+    CHECK(leftMul->op() == "*");
+
+    auto* leftA = dynamic_cast<const IdentifierExpression*>(leftMul->left());
+    REQUIRE(leftA != nullptr);
+    CHECK(leftA->name() == "a");
+
+    auto* rightB = dynamic_cast<const IdentifierExpression*>(leftMul->right());
+    REQUIRE(rightB != nullptr);
+    CHECK(rightB->name() == "b");
+
+    // Right child is BinaryExpr(/) for "c / d"
+    auto* rightDiv = dynamic_cast<const BinaryExpr*>(root->right());
+    REQUIRE(rightDiv != nullptr);
+    CHECK(rightDiv->op() == "/");
+
+    auto* leftC = dynamic_cast<const IdentifierExpression*>(rightDiv->left());
+    REQUIRE(leftC != nullptr);
+    CHECK(leftC->name() == "c");
+
+    auto* rightD = dynamic_cast<const IdentifierExpression*>(rightDiv->right());
+    REQUIRE(rightD != nullptr);
+    CHECK(rightD->name() == "d");
+
+    CHECK(parser.isAtEnd());
+}
+
+TEST_CASE("parseExpression: left-associativity of division 'a / b / c' -> (a / b) / c", "[parser][binary][associativity]") {
+    Parser parser = makeParser("a / b / c");
+    auto expr = parser.parseExpression();
+
+    REQUIRE(expr != nullptr);
+    CHECK_FALSE(parser.hasError());
+
+    // Root is BinaryExpr(/)
+    auto* root = dynamic_cast<BinaryExpr*>(expr.get());
+    REQUIRE(root != nullptr);
+    CHECK(root->op() == "/");
+
+    // Left child is BinaryExpr(/) for "a / b"
+    auto* leftDiv = dynamic_cast<const BinaryExpr*>(root->left());
+    REQUIRE(leftDiv != nullptr);
+    CHECK(leftDiv->op() == "/");
+
+    auto* leftA = dynamic_cast<const IdentifierExpression*>(leftDiv->left());
+    REQUIRE(leftA != nullptr);
+    CHECK(leftA->name() == "a");
+
+    auto* rightB = dynamic_cast<const IdentifierExpression*>(leftDiv->right());
+    REQUIRE(rightB != nullptr);
+    CHECK(rightB->name() == "b");
+
+    // Right child is Identifier(c)
+    auto* rightC = dynamic_cast<const IdentifierExpression*>(root->right());
+    REQUIRE(rightC != nullptr);
+    CHECK(rightC->name() == "c");
+
+    CHECK(parser.isAtEnd());
+}
+
+TEST_CASE("parseExpression: numeric literals with precedence '1 + 2 * 3' -> 1 + (2 * 3)", "[parser][binary][precedence]") {
+    Parser parser = makeParser("1 + 2 * 3");
+    auto expr = parser.parseExpression();
+
+    REQUIRE(expr != nullptr);
+    CHECK_FALSE(parser.hasError());
+
+    // Root is BinaryExpr(+)
+    auto* root = dynamic_cast<BinaryExpr*>(expr.get());
+    REQUIRE(root != nullptr);
+    CHECK(root->op() == "+");
+
+    // Left child is LiteralExpression(1)
+    auto* leftLit = dynamic_cast<const LiteralExpression*>(root->left());
+    REQUIRE(leftLit != nullptr);
+    CHECK(leftLit->value() == "1");
+
+    // Right child is BinaryExpr(*) for "2 * 3"
+    auto* rightMul = dynamic_cast<const BinaryExpr*>(root->right());
+    REQUIRE(rightMul != nullptr);
+    CHECK(rightMul->op() == "*");
+
+    auto* left2 = dynamic_cast<const LiteralExpression*>(rightMul->left());
+    REQUIRE(left2 != nullptr);
+    CHECK(left2->value() == "2");
+
+    auto* right3 = dynamic_cast<const LiteralExpression*>(rightMul->right());
+    REQUIRE(right3 != nullptr);
+    CHECK(right3->value() == "3");
 
     CHECK(parser.isAtEnd());
 }
@@ -791,6 +976,36 @@ TEST_CASE("parseExpression: missing right operand 'a -' at EOF fails cleanly", "
     CHECK(expr == nullptr);
     CHECK(parser.hasError());
     CHECK(parser.errorMessage() == "Expected expression after '-'");
+    CHECK(parser.isAtEnd());
+}
+
+TEST_CASE("parseExpression: missing right operand 'a *' at EOF fails cleanly", "[parser][binary][error]") {
+    Parser parser = makeParser("a *");
+    auto expr = parser.parseExpression();
+
+    CHECK(expr == nullptr);
+    CHECK(parser.hasError());
+    CHECK(parser.errorMessage() == "Expected expression after '*'");
+    CHECK(parser.isAtEnd());
+}
+
+TEST_CASE("parseExpression: missing right operand 'a /' at EOF fails cleanly", "[parser][binary][error]") {
+    Parser parser = makeParser("a /");
+    auto expr = parser.parseExpression();
+
+    CHECK(expr == nullptr);
+    CHECK(parser.hasError());
+    CHECK(parser.errorMessage() == "Expected expression after '/'");
+    CHECK(parser.isAtEnd());
+}
+
+TEST_CASE("parseExpression: missing right operand in chained precedence 'a + b *' at EOF fails cleanly", "[parser][binary][error]") {
+    Parser parser = makeParser("a + b *");
+    auto expr = parser.parseExpression();
+
+    CHECK(expr == nullptr);
+    CHECK(parser.hasError());
+    CHECK(parser.errorMessage() == "Expected expression after '*'");
     CHECK(parser.isAtEnd());
 }
 
