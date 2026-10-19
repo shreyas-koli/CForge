@@ -1,0 +1,13 @@
+warning: in the working copy of 'CMakeLists.txt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'include/ast/ast.h', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'include/ast/expr.h', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'include/parser/parser.h', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/parser/expr.cpp', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'tests/test_parser.cpp', LF will be replaced by CRLF the next time Git touches it
+ CMakeLists.txt          |   2 [32m+[m
+ include/ast/ast.h       |   1 [32m+[m
+ include/ast/expr.h      |   1 [32m+[m
+ include/parser/parser.h |   7 [32m+[m
+ src/parser/expr.cpp     |  49 [32m+++[m[31m-[m
+ tests/test_parser.cpp   | 620 [32m+++++++++++++++++++++++++++++++++++++++++++++++[m[31m-[m
+ 6 files changed, 673 insertions(+), 7 deletions(-)

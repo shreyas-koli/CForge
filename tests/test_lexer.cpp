@@ -1068,6 +1068,36 @@ TEST_CASE("Multi-character operators scan as TokenType::Operator", "[lexer][oper
     }
 }
 
+TEST_CASE("Compound assignment operators scan as TokenType::Operator", "[lexer][operator][assignment]") {
+    struct OpCase { std::string src; std::string expected; };
+    std::vector<OpCase> cases = {
+        {"+=", "+="},
+        {"-=", "-="},
+        {"*=", "*="},
+        {"/=", "/="},
+    };
+
+    for (const auto& c : cases) {
+        Token t = lexFirst(c.src);
+        CHECK(t.type   == TokenType::Operator);
+        CHECK(t.lexeme == c.expected);
+    }
+}
+
+TEST_CASE("Compound assignment operator location tracking", "[lexer][operator][assignment]") {
+    Token t1 = lexFirst("   +=");
+    CHECK(t1.type == TokenType::Operator);
+    CHECK(t1.lexeme == "+=");
+    CHECK(t1.line == 1);
+    CHECK(t1.column == 4);
+
+    Token t2 = lexFirst("   /=");
+    CHECK(t2.type == TokenType::Operator);
+    CHECK(t2.lexeme == "/=");
+    CHECK(t2.line == 1);
+    CHECK(t2.column == 4);
+}
+
 // -----------------------------------------------------------------------------
 // 3. Punctuation
 // -----------------------------------------------------------------------------

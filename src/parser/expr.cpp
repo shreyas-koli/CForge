@@ -1,7 +1,7 @@
 #include "parser/parser.h"
 
 // =============================================================================
-// parseExpression() & parseBinaryExpression() — Day 15 Operator Precedence
+// parseExpression() & parseBinaryExpression() — Day 15 & Day 16
 // =============================================================================
 //
 // Precedence-climbing binary expression parser.
@@ -25,8 +25,53 @@ static int getOperatorPrecedence(const Token& tok) {
     return 0;
 }
 
+static bool isPrefixUnaryOperator(const Token& tok) {
+    if (tok.type != TokenType::Operator) {
+        return false;
+    }
+    return tok.lexeme == "-" || tok.lexeme == "+" ||
+           tok.lexeme == "!" || tok.lexeme == "~" ||
+           tok.lexeme == "++" || tok.lexeme == "--";
+}
+
+// =============================================================================
+// parseUnary() — Day 16 Unary Expressions
+// =============================================================================
+//
+// Grammar:
+//   unary-expression:
+//       ('+' | '-' | '!' | '~' | '++' | '--') unary-expression
+//       primary-expression
+//
+// When a prefix unary operator is found, consumes it and recursively calls
+// parseUnary() to parse its operand, supporting operator chains like "!-x" or "--x".
+// If no prefix operator matches, delegates to parsePrimary().
+//
+std::unique_ptr<Expression> Parser::parseUnary() {
+    if (isAtEnd()) {
+        return nullptr;
+    }
+
+    if (isPrefixUnaryOperator(peek())) {
+        Token opToken = advance();
+        SourceLocation loc{opToken.line, opToken.column};
+
+        std::unique_ptr<Expression> operand = parseUnary();
+        if (!operand) {
+            if (!hasError()) {
+                error("Expected expression after '" + opToken.lexeme + "'");
+            }
+            return nullptr;
+        }
+
+        return std::make_unique<UnaryExpr>(opToken.lexeme, std::move(operand), loc);
+    }
+
+    return parsePrimary();
+}
+
 std::unique_ptr<Expression> Parser::parseBinaryExpression(int minPrecedence) {
-    std::unique_ptr<Expression> left = parsePrimary();
+    std::unique_ptr<Expression> left = parseUnary();
     if (!left) {
         return nullptr;
     }
@@ -56,8 +101,54 @@ std::unique_ptr<Expression> Parser::parseBinaryExpression(int minPrecedence) {
     return left;
 }
 
+static bool isAssignmentOperator(const Token& tok) {
+    if (tok.type != TokenType::Operator) {
+        return false;
+    }
+    return tok.lexeme == "=" || tok.lexeme == "+=" ||
+           tok.lexeme == "-=" || tok.lexeme == "*=" ||
+           tok.lexeme == "/=";
+}
+
+// =============================================================================
+// parseAssignment() — Day 17 Assignment Expressions
+// =============================================================================
+//
+// Grammar:
+//   assignment-expression:
+//       binary-expression [ ('=' | '+=' | '-=' | '*=' | '/=') assignment-expression ]
+//
+// Assignment has the lowest precedence level and is right-associative:
+//   "a = b = c" -> a = (b = c)
+//   "x = a + b * c" -> x = (a + (b * c))
+//
+std::unique_ptr<Expression> Parser::parseAssignment() {
+    std::unique_ptr<Expression> left = parseBinaryExpression(1);
+    if (!left) {
+        return nullptr;
+    }
+
+    if (!isAtEnd() && isAssignmentOperator(peek())) {
+        Token opToken = advance();
+        SourceLocation loc = left->location();
+
+        // Right-associative: parse right-hand side as assignment expression
+        std::unique_ptr<Expression> right = parseAssignment();
+        if (!right) {
+            if (!hasError()) {
+                error("Expected expression after '" + opToken.lexeme + "'");
+            }
+            return nullptr;
+        }
+
+        return std::make_unique<AssignExpr>(opToken.lexeme, std::move(left), std::move(right), loc);
+    }
+
+    return left;
+}
+
 std::unique_ptr<Expression> Parser::parseExpression() {
-    return parseBinaryExpression(1);
+    return parseAssignment();
 }
 
 // =============================================================================

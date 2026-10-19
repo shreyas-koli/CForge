@@ -9,3 +9,5 @@
 #include "ast/literal_expression.h"
 #include "ast/identifier_expression.h"
 #include "ast/binary_expr.h"
+#include "ast/unary_expr.h"
+#include "ast/assign_expr.h"

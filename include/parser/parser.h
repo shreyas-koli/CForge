@@ -19,9 +19,14 @@ public:
     explicit Parser(std::vector<Token> tokens);
     explicit Parser(Lexer& lexer);
 
-    // Expression parsing (Day 13 — Day 15)
-    // Top-level expression entry point delegating to precedence climbing.
+    // Expression parsing (Day 13 — Day 17)
+    // Top-level expression entry point delegating to assignment parsing.
     std::unique_ptr<Expression> parseExpression();
+
+    // Assignment expression parsing (Day 17)
+    // Operators: '=', '+=', '-=', '*=', '/='
+    // Right-associative. Lowest expression precedence level.
+    std::unique_ptr<Expression> parseAssignment();
 
     // Precedence-climbing binary expression parser (Day 15)
     // Precedence levels:
@@ -29,6 +34,13 @@ public:
     //   Level 1 (lower):  '+', '-'
     // Left-associative: recursive right-hand calls use precedence + 1.
     std::unique_ptr<Expression> parseBinaryExpression(int minPrecedence = 1);
+
+    // Unary expression parsing (Day 16)
+    // Grammar:
+    //   unary-expression:
+    //       ('+' | '-' | '!' | '~' | '++' | '--') unary-expression
+    //       primary-expression
+    std::unique_ptr<Expression> parseUnary();
 
     // Primary expression parsing (Day 12 & Day 13)
     // Grammar:

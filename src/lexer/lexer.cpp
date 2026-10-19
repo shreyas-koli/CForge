@@ -610,6 +610,10 @@ Token Lexer::nextToken() {
                 advance();
                 return Token{TokenType::Operator, "++", startLine, startColumn};
             }
+            if (peek() == '=') {
+                advance();
+                return Token{TokenType::Operator, "+=", startLine, startColumn};
+            }
             return Token{TokenType::Operator, "+", startLine, startColumn};
         }
         case '-': {
@@ -618,12 +622,32 @@ Token Lexer::nextToken() {
                 advance();
                 return Token{TokenType::Operator, "--", startLine, startColumn};
             }
+            if (peek() == '=') {
+                advance();
+                return Token{TokenType::Operator, "-=", startLine, startColumn};
+            }
             return Token{TokenType::Operator, "-", startLine, startColumn};
         }
 
+        // Multi-character operators (*=, /=) or single-character fallbacks (Day 17)
+        case '*': {
+            advance();
+            if (peek() == '=') {
+                advance();
+                return Token{TokenType::Operator, "*=", startLine, startColumn};
+            }
+            return Token{TokenType::Operator, "*", startLine, startColumn};
+        }
+        case '/': {
+            advance();
+            if (peek() == '=') {
+                advance();
+                return Token{TokenType::Operator, "/=", startLine, startColumn};
+            }
+            return Token{TokenType::Operator, "/", startLine, startColumn};
+        }
+
         // Single-character operators only
-        case '*':
-        case '/':
         case '%':
         case '^':
         case '~': {
