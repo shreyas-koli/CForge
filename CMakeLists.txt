@@ -31,8 +31,10 @@ add_executable(cforge
     src/ast/assign_expr.cpp
     src/ast/binary_expr.cpp
     src/ast/unary_expr.cpp
+    src/ast/printer.cpp
     src/parser/parser.cpp
     src/parser/expr.cpp
+    src/parser/decl.cpp
 )
 
 # -----------------------------------------------------------------------------
@@ -68,6 +70,7 @@ add_executable(cforge_tests
     tests/test_lexer.cpp
     tests/test_ast.cpp
     tests/test_parser.cpp
+    tests/parser/test_phase2_integration.cpp
     src/driver/pipeline.cpp
     src/lexer/token.cpp
     src/lexer/lexer.cpp
@@ -82,8 +85,10 @@ add_executable(cforge_tests
     src/ast/assign_expr.cpp
     src/ast/binary_expr.cpp
     src/ast/unary_expr.cpp
+    src/ast/printer.cpp
     src/parser/parser.cpp
     src/parser/expr.cpp
+    src/parser/decl.cpp
 )
 target_link_libraries(cforge_tests PRIVATE Catch2::Catch2)
 

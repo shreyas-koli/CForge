@@ -19,6 +19,21 @@ public:
     explicit Parser(std::vector<Token> tokens);
     explicit Parser(Lexer& lexer);
 
+    // Program & Declaration parsing (Day 18)
+    // Entry point for full translation unit parsing.
+    std::unique_ptr<Program> parseProgram();
+
+    // Declaration parsing (Day 18)
+    // Top-level declaration parser delegating to parseFunctionDeclaration().
+    std::unique_ptr<Function> parseDeclaration();
+
+    // Function declaration and definition parsing (Day 18)
+    // Grammar:
+    //   function-declaration:
+    //       type-specifier identifier '(' parameter-list? ')' ';'
+    //       type-specifier identifier '(' parameter-list? ')' '{' ... '}'
+    std::unique_ptr<Function> parseFunctionDeclaration();
+
     // Expression parsing (Day 13 — Day 17)
     // Top-level expression entry point delegating to assignment parsing.
     std::unique_ptr<Expression> parseExpression();
@@ -58,6 +73,8 @@ public:
     // Parser State & Lookahead Helpers
     bool isAtEnd() const;
     const Token& peek() const;
+    const Token& peekAt(std::size_t offset) const;
+    const Token& peekNext() const;
     const Token& previous() const;
     Token advance();
     bool check(TokenType type) const;

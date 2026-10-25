@@ -23,6 +23,18 @@ const Token& Parser::peek() const {
     return m_tokens[m_current];
 }
 
+const Token& Parser::peekAt(std::size_t offset) const {
+    if (m_current + offset >= m_tokens.size()) {
+        static const Token eofToken{TokenType::Eof, "", 0, 0};
+        return eofToken;
+    }
+    return m_tokens[m_current + offset];
+}
+
+const Token& Parser::peekNext() const {
+    return peekAt(1);
+}
+
 const Token& Parser::previous() const {
     if (m_current == 0) {
         static const Token eofToken{TokenType::Eof, "", 0, 0};

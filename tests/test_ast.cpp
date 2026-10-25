@@ -255,3 +255,249 @@ TEST_CASE("SourceLocation stored accurately across AST nodes", "[ast][location]"
     CHECK(fn.location().line == 100);
     CHECK(fn.location().column == 1);
 }
+
+// =============================================================================
+// DAY 19 TESTS - AST Printer
+// =============================================================================
+
+// -----------------------------------------------------------------------------
+// 12. Identifiers and Literals
+// -----------------------------------------------------------------------------
+TEST_CASE("ASTPrinter: identifier and literal expressions", "[ast][printer]") {
+    ASTPrinter printer;
+
+    IdentifierExpression id("myVar");
+    CHECK(printer.print(&id) == "IdentifierExpression: myVar\n");
+
+    LiteralExpression intLit(LiteralKind::Integer, "42");
+    CHECK(printer.print(&intLit) == "LiteralExpression (Integer): 42\n");
+
+    LiteralExpression floatLit(LiteralKind::Float, "3.14");
+    CHECK(printer.print(&floatLit) == "LiteralExpression (Float): 3.14\n");
+
+    LiteralExpression charLit(LiteralKind::Char, "'a'");
+    CHECK(printer.print(&charLit) == "LiteralExpression (Char): 'a'\n");
+
+    LiteralExpression strLit(LiteralKind::String, "\"hello\"");
+    CHECK(printer.print(&strLit) == "LiteralExpression (String): \"hello\"\n");
+}
+
+// -----------------------------------------------------------------------------
+// 13. Binary Precedence Trees
+// -----------------------------------------------------------------------------
+TEST_CASE("ASTPrinter: binary precedence 'a + b * c'", "[ast][printer]") {
+    // Models AST for: a + (b * c)
+    auto bTimesC = std::make_unique<BinaryExpr>(
+        "*",
+        std::make_unique<IdentifierExpression>("b"),
+        std::make_unique<IdentifierExpression>("c")
+    );
+    auto aPlus = std::make_unique<BinaryExpr>(
+        "+",
+        std::make_unique<IdentifierExpression>("a"),
+        std::move(bTimesC)
+    );
+
+    ASTPrinter printer;
+    std::string expected =
+        "BinaryExpr: +\n"
+        "  Left:\n"
+        "    IdentifierExpression: a\n"
+        "  Right:\n"
+        "    BinaryExpr: *\n"
+        "      Left:\n"
+        "        IdentifierExpression: b\n"
+        "      Right:\n"
+        "        IdentifierExpression: c\n";
+
+    CHECK(printer.print(aPlus.get()) == expected);
+}
+
+// -----------------------------------------------------------------------------
+// 14. Unary Expressions
+// -----------------------------------------------------------------------------
+TEST_CASE("ASTPrinter: unary expressions '-x' and chained '!-x'", "[ast][printer]") {
+    ASTPrinter printer;
+
+    UnaryExpr negX("-", std::make_unique<IdentifierExpression>("x"));
+    std::string expectedNegX =
+        "UnaryExpr: -\n"
+        "  Operand:\n"
+        "    IdentifierExpression: x\n";
+    CHECK(printer.print(&negX) == expectedNegX);
+
+    UnaryExpr notNegX("!", std::make_unique<UnaryExpr>("-", std::make_unique<IdentifierExpression>("x")));
+    std::string expectedNotNegX =
+        "UnaryExpr: !\n"
+        "  Operand:\n"
+        "    UnaryExpr: -\n"
+        "      Operand:\n"
+        "        IdentifierExpression: x\n";
+    CHECK(printer.print(&notNegX) == expectedNotNegX);
+}
+
+// -----------------------------------------------------------------------------
+// 15. Assignment Expressions
+// -----------------------------------------------------------------------------
+TEST_CASE("ASTPrinter: assignment expressions 'a = b = c' and compound 'x += 5'", "[ast][printer]") {
+    ASTPrinter printer;
+
+    // Right-associative: a = (b = c)
+    auto bAssignC = std::make_unique<AssignExpr>(
+        "=",
+        std::make_unique<IdentifierExpression>("b"),
+        std::make_unique<IdentifierExpression>("c")
+    );
+    auto aAssign = std::make_unique<AssignExpr>(
+        "=",
+        std::make_unique<IdentifierExpression>("a"),
+        std::move(bAssignC)
+    );
+
+    std::string expectedChained =
+        "AssignExpr: =\n"
+        "  Left:\n"
+        "    IdentifierExpression: a\n"
+        "  Right:\n"
+        "    AssignExpr: =\n"
+        "      Left:\n"
+        "        IdentifierExpression: b\n"
+        "      Right:\n"
+        "        IdentifierExpression: c\n";
+    CHECK(printer.print(aAssign.get()) == expectedChained);
+
+    AssignExpr compound(
+        "+=",
+        std::make_unique<IdentifierExpression>("x"),
+        std::make_unique<LiteralExpression>(LiteralKind::Integer, "5")
+    );
+    std::string expectedCompound =
+        "AssignExpr: +=\n"
+        "  Left:\n"
+        "    IdentifierExpression: x\n"
+        "  Right:\n"
+        "    LiteralExpression (Integer): 5\n";
+    CHECK(printer.print(&compound) == expectedCompound);
+}
+
+// -----------------------------------------------------------------------------
+// 16. Variable Declarations
+// -----------------------------------------------------------------------------
+TEST_CASE("ASTPrinter: variable declarations with and without initializer", "[ast][printer]") {
+    ASTPrinter printer;
+
+    VariableDeclaration uninit("count", "int");
+    CHECK(printer.print(&uninit) == "VariableDeclaration: int count\n");
+
+    VariableDeclaration init("x", "float", std::make_unique<LiteralExpression>(LiteralKind::Float, "3.14"));
+    std::string expectedInit =
+        "VariableDeclaration: float x\n"
+        "  Initializer:\n"
+        "    LiteralExpression (Float): 3.14\n";
+    CHECK(printer.print(&init) == expectedInit);
+}
+
+// -----------------------------------------------------------------------------
+// 17. Function Prototypes and Definitions
+// -----------------------------------------------------------------------------
+TEST_CASE("ASTPrinter: function prototype and definition", "[ast][printer]") {
+    ASTPrinter printer;
+
+    // Prototype: int calculate(int x);
+    Function proto("calculate", "int", SourceLocation{}, false);
+    proto.addParameter(std::make_unique<VariableDeclaration>("x", "int"));
+
+    std::string expectedProto =
+        "Function (prototype): int calculate\n"
+        "  Parameters:\n"
+        "    VariableDeclaration: int x\n";
+    CHECK(printer.print(&proto) == expectedProto);
+
+    // Definition: int add(int a, int b) { ... }
+    Function def("add", "int", SourceLocation{}, true);
+    def.addParameter(std::make_unique<VariableDeclaration>("a", "int"));
+    def.addParameter(std::make_unique<VariableDeclaration>("b", "int"));
+
+    std::string expectedDef =
+        "Function (definition): int add\n"
+        "  Parameters:\n"
+        "    VariableDeclaration: int a\n"
+        "    VariableDeclaration: int b\n"
+        "  Body:\n"
+        "    [body not parsed]\n";
+    CHECK(printer.print(&def) == expectedDef);
+
+    // Definition with empty parameters: void greet(void) { }
+    Function greet("greet", "void", SourceLocation{}, true);
+    std::string expectedGreet =
+        "Function (definition): void greet\n"
+        "  Parameters: (none)\n"
+        "  Body:\n"
+        "    [body not parsed]\n";
+    CHECK(printer.print(&greet) == expectedGreet);
+}
+
+// -----------------------------------------------------------------------------
+// 18. Program with Multiple Functions
+// -----------------------------------------------------------------------------
+TEST_CASE("ASTPrinter: program with multiple declarations", "[ast][printer]") {
+    Program prog;
+
+    auto proto = std::make_unique<Function>("calculate", "int", SourceLocation{}, false);
+    proto->addParameter(std::make_unique<VariableDeclaration>("x", "int"));
+    prog.addStatement(std::move(proto));
+
+    auto add = std::make_unique<Function>("add", "int", SourceLocation{}, true);
+    add->addParameter(std::make_unique<VariableDeclaration>("a", "int"));
+    add->addParameter(std::make_unique<VariableDeclaration>("b", "int"));
+    prog.addStatement(std::move(add));
+
+    auto greet = std::make_unique<Function>("greet", "void", SourceLocation{}, true);
+    prog.addStatement(std::move(greet));
+
+    std::string expected =
+        "Program\n"
+        "  Function (prototype): int calculate\n"
+        "    Parameters:\n"
+        "      VariableDeclaration: int x\n"
+        "  Function (definition): int add\n"
+        "    Parameters:\n"
+        "      VariableDeclaration: int a\n"
+        "      VariableDeclaration: int b\n"
+        "    Body:\n"
+        "      [body not parsed]\n"
+        "  Function (definition): void greet\n"
+        "    Parameters: (none)\n"
+        "    Body:\n"
+        "      [body not parsed]\n";
+
+    ASTPrinter printer;
+    CHECK(printer.print(&prog) == expected);
+}
+
+// -----------------------------------------------------------------------------
+// 19. Defensive Null Pointer Handling and Custom Indentation
+// -----------------------------------------------------------------------------
+TEST_CASE("ASTPrinter: defensive null handling and custom indentation", "[ast][printer]") {
+    ASTPrinter printer(2);
+
+    CHECK(printer.print(nullptr) == "[null]\n");
+
+    BinaryExpr binWithNull("+", std::make_unique<IdentifierExpression>("a"), nullptr);
+    std::string expectedBinNull =
+        "BinaryExpr: +\n"
+        "  Left:\n"
+        "    IdentifierExpression: a\n"
+        "  Right:\n"
+        "    [null]\n";
+    CHECK(printer.print(&binWithNull) == expectedBinNull);
+
+    // Custom 4-space indentation
+    ASTPrinter printer4(4);
+    UnaryExpr un("-", std::make_unique<IdentifierExpression>("x"));
+    std::string expected4 =
+        "UnaryExpr: -\n"
+        "    Operand:\n"
+        "        IdentifierExpression: x\n";
+    CHECK(printer4.print(&un) == expected4);
+}

@@ -2134,5 +2134,386 @@ TEST_CASE("AssignExpr: AST node accessors and toString", "[ast][assign]") {
     CHECK(takenRight->toString() == "LiteralExpression(Integer, 100)");
 }
 
+// =============================================================================
+// DAY 18 TESTS - Function Declarations and Definitions
+// =============================================================================
+
+// -----------------------------------------------------------------------------
+// 29. Function Prototypes (Declarations)
+// -----------------------------------------------------------------------------
+TEST_CASE("parseDeclaration: prototype 'int add(int a, int b);'", "[parser][decl][function]") {
+    Parser parser = makeParser("int add(int a, int b);");
+    auto fn = parser.parseDeclaration();
+
+    REQUIRE(fn != nullptr);
+    CHECK_FALSE(parser.hasError());
+    CHECK(parser.isAtEnd());
+
+    CHECK(fn->name() == "add");
+    CHECK(fn->returnType() == "int");
+    CHECK(fn->isDeclaration());
+    CHECK(fn->isPrototype());
+    CHECK_FALSE(fn->isDefinition());
+
+    REQUIRE(fn->parameters().size() == 2);
+    CHECK(fn->parameters()[0]->name() == "a");
+    CHECK(fn->parameters()[0]->type() == "int");
+    CHECK_FALSE(fn->parameters()[0]->hasInitializer());
+
+    CHECK(fn->parameters()[1]->name() == "b");
+    CHECK(fn->parameters()[1]->type() == "int");
+    CHECK_FALSE(fn->parameters()[1]->hasInitializer());
+
+    CHECK(fn->body().empty());
+}
+
+TEST_CASE("parseDeclaration: prototype 'int calculate(int x);'", "[parser][decl][function]") {
+    Parser parser = makeParser("int calculate(int x);");
+    auto fn = parser.parseDeclaration();
+
+    REQUIRE(fn != nullptr);
+    CHECK_FALSE(parser.hasError());
+    CHECK(parser.isAtEnd());
+
+    CHECK(fn->name() == "calculate");
+    CHECK(fn->returnType() == "int");
+    CHECK(fn->isPrototype());
+    CHECK_FALSE(fn->isDefinition());
+
+    REQUIRE(fn->parameters().size() == 1);
+    CHECK(fn->parameters()[0]->name() == "x");
+    CHECK(fn->parameters()[0]->type() == "int");
+    CHECK(fn->body().empty());
+}
+
+TEST_CASE("parseDeclaration: prototype with empty parameter list 'int main();'", "[parser][decl][function]") {
+    Parser parser = makeParser("int main();");
+    auto fn = parser.parseDeclaration();
+
+    REQUIRE(fn != nullptr);
+    CHECK_FALSE(parser.hasError());
+    CHECK(parser.isAtEnd());
+
+    CHECK(fn->name() == "main");
+    CHECK(fn->returnType() == "int");
+    CHECK(fn->isPrototype());
+    CHECK(fn->parameters().empty());
+    CHECK(fn->body().empty());
+}
+
+TEST_CASE("parseDeclaration: prototype with explicit '(void)' 'void run(void);'", "[parser][decl][function]") {
+    Parser parser = makeParser("void run(void);");
+    auto fn = parser.parseDeclaration();
+
+    REQUIRE(fn != nullptr);
+    CHECK_FALSE(parser.hasError());
+    CHECK(parser.isAtEnd());
+
+    CHECK(fn->name() == "run");
+    CHECK(fn->returnType() == "void");
+    CHECK(fn->isPrototype());
+    CHECK(fn->parameters().empty());
+    CHECK(fn->body().empty());
+}
+
+// -----------------------------------------------------------------------------
+// 30. Function Definitions
+// -----------------------------------------------------------------------------
+TEST_CASE("parseDeclaration: definition 'int add(int a, int b) { return a + b; }'", "[parser][decl][function]") {
+    Parser parser = makeParser("int add(int a, int b) {\n    return a + b;\n}");
+    auto fn = parser.parseDeclaration();
+
+    REQUIRE(fn != nullptr);
+    CHECK_FALSE(parser.hasError());
+    CHECK(parser.isAtEnd());
+
+    CHECK(fn->name() == "add");
+    CHECK(fn->returnType() == "int");
+    CHECK(fn->isDefinition());
+    CHECK_FALSE(fn->isPrototype());
+
+    REQUIRE(fn->parameters().size() == 2);
+    CHECK(fn->parameters()[0]->name() == "a");
+    CHECK(fn->parameters()[0]->type() == "int");
+    CHECK(fn->parameters()[1]->name() == "b");
+    CHECK(fn->parameters()[1]->type() == "int");
+
+    // Statement grammar inside function bodies is not implemented yet;
+    // body is consumed via balanced-brace tracking and preserved as an empty statement list stub.
+    CHECK(fn->body().empty());
+}
+
+TEST_CASE("parseDeclaration: definition 'void greet(void) { }'", "[parser][decl][function]") {
+    Parser parser = makeParser("void greet(void) {\n}");
+    auto fn = parser.parseDeclaration();
+
+    REQUIRE(fn != nullptr);
+    CHECK_FALSE(parser.hasError());
+    CHECK(parser.isAtEnd());
+
+    CHECK(fn->name() == "greet");
+    CHECK(fn->returnType() == "void");
+    CHECK(fn->isDefinition());
+    CHECK_FALSE(fn->isPrototype());
+    CHECK(fn->parameters().empty());
+    CHECK(fn->body().empty());
+}
+
+TEST_CASE("parseDeclaration: definition with empty parameter list 'int main() { }'", "[parser][decl][function]") {
+    Parser parser = makeParser("int main() { }");
+    auto fn = parser.parseDeclaration();
+
+    REQUIRE(fn != nullptr);
+    CHECK_FALSE(parser.hasError());
+    CHECK(parser.isAtEnd());
+
+    CHECK(fn->name() == "main");
+    CHECK(fn->returnType() == "int");
+    CHECK(fn->isDefinition());
+    CHECK(fn->parameters().empty());
+    CHECK(fn->body().empty());
+}
+
+TEST_CASE("parseDeclaration: definition with nested body braces", "[parser][decl][function]") {
+    Parser parser = makeParser("int nested(int n) { if (n > 0) { { int inner = 1; } } return n; }");
+    auto fn = parser.parseDeclaration();
+
+    REQUIRE(fn != nullptr);
+    CHECK_FALSE(parser.hasError());
+    CHECK(parser.isAtEnd());
+
+    CHECK(fn->name() == "nested");
+    CHECK(fn->returnType() == "int");
+    CHECK(fn->isDefinition());
+    REQUIRE(fn->parameters().size() == 1);
+    CHECK(fn->body().empty());
+}
+
+// -----------------------------------------------------------------------------
+// 31. Multiple Parameters and Primitive Types
+// -----------------------------------------------------------------------------
+TEST_CASE("parseDeclaration: primitive types 'float calculate(double x, char tag);'", "[parser][decl][function]") {
+    Parser parser = makeParser("float calculate(double x, char tag);");
+    auto fn = parser.parseDeclaration();
+
+    REQUIRE(fn != nullptr);
+    CHECK_FALSE(parser.hasError());
+    CHECK(parser.isAtEnd());
+
+    CHECK(fn->name() == "calculate");
+    CHECK(fn->returnType() == "float");
+    CHECK(fn->isPrototype());
+
+    REQUIRE(fn->parameters().size() == 2);
+    CHECK(fn->parameters()[0]->name() == "x");
+    CHECK(fn->parameters()[0]->type() == "double");
+    CHECK(fn->parameters()[1]->name() == "tag");
+    CHECK(fn->parameters()[1]->type() == "char");
+}
+
+TEST_CASE("parseDeclaration: four parameters with mixed types", "[parser][decl][function]") {
+    Parser parser = makeParser("void process(int a, float b, double c, char d) { }");
+    auto fn = parser.parseDeclaration();
+
+    REQUIRE(fn != nullptr);
+    CHECK_FALSE(parser.hasError());
+    CHECK(parser.isAtEnd());
+
+    CHECK(fn->name() == "process");
+    CHECK(fn->returnType() == "void");
+    CHECK(fn->isDefinition());
+
+    REQUIRE(fn->parameters().size() == 4);
+    CHECK(fn->parameters()[0]->type() == "int");
+    CHECK(fn->parameters()[0]->name() == "a");
+    CHECK(fn->parameters()[1]->type() == "float");
+    CHECK(fn->parameters()[1]->name() == "b");
+    CHECK(fn->parameters()[2]->type() == "double");
+    CHECK(fn->parameters()[2]->name() == "c");
+    CHECK(fn->parameters()[3]->type() == "char");
+    CHECK(fn->parameters()[3]->name() == "d");
+}
+
+// -----------------------------------------------------------------------------
+// 32. Distinction from Variable Declarations
+// -----------------------------------------------------------------------------
+TEST_CASE("parseDeclaration: variable declaration 'int x = 10;' is not confused with function", "[parser][decl][variable]") {
+    Parser parser = makeParser("int x = 10;");
+    auto fn = parser.parseDeclaration();
+
+    // Returns nullptr without consuming tokens and without reporting an error
+    CHECK(fn == nullptr);
+    CHECK_FALSE(parser.hasError());
+    CHECK(parser.peek().lexeme == "int");
+}
+
+TEST_CASE("parseDeclaration: variable declaration without initializer 'int count;' is not confused", "[parser][decl][variable]") {
+    Parser parser = makeParser("int count;");
+    auto fn = parser.parseDeclaration();
+
+    CHECK(fn == nullptr);
+    CHECK_FALSE(parser.hasError());
+    CHECK(parser.peek().lexeme == "int");
+}
+
+// -----------------------------------------------------------------------------
+// 33. Translation Unit (Program) Parsing
+// -----------------------------------------------------------------------------
+TEST_CASE("parseProgram: multiple functions including prototypes and definitions", "[parser][program]") {
+    const std::string source =
+        "int calculate(int x);\n\n"
+        "int add(int a, int b) {\n"
+        "    return a + b;\n"
+        "}\n\n"
+        "void greet(void) {\n"
+        "}\n";
+
+    Parser parser = makeParser(source);
+    auto program = parser.parseProgram();
+
+    REQUIRE(program != nullptr);
+    CHECK_FALSE(parser.hasError());
+    CHECK(parser.isAtEnd());
+
+    REQUIRE(program->statementCount() == 3);
+
+    auto* fn0 = dynamic_cast<Function*>(program->statements()[0].get());
+    REQUIRE(fn0 != nullptr);
+    CHECK(fn0->name() == "calculate");
+    CHECK(fn0->returnType() == "int");
+    CHECK(fn0->isPrototype());
+    REQUIRE(fn0->parameters().size() == 1);
+
+    auto* fn1 = dynamic_cast<Function*>(program->statements()[1].get());
+    REQUIRE(fn1 != nullptr);
+    CHECK(fn1->name() == "add");
+    CHECK(fn1->returnType() == "int");
+    CHECK(fn1->isDefinition());
+    REQUIRE(fn1->parameters().size() == 2);
+
+    auto* fn2 = dynamic_cast<Function*>(program->statements()[2].get());
+    REQUIRE(fn2 != nullptr);
+    CHECK(fn2->name() == "greet");
+    CHECK(fn2->returnType() == "void");
+    CHECK(fn2->isDefinition());
+    CHECK(fn2->parameters().empty());
+}
+
+// -----------------------------------------------------------------------------
+// 34. Error Handling
+// -----------------------------------------------------------------------------
+TEST_CASE("parseDeclaration error: missing ')' in parameter list", "[parser][decl][error]") {
+    Parser parser = makeParser("int foo(int a;");
+    auto fn = parser.parseDeclaration();
+
+    CHECK(fn == nullptr);
+    CHECK(parser.hasError());
+    CHECK(parser.errorMessage() == "Expected ',' or ')' after parameter declaration");
+}
+
+TEST_CASE("parseDeclaration error: missing ')' at EOF", "[parser][decl][error]") {
+    Parser parser = makeParser("int foo(int a");
+    auto fn = parser.parseDeclaration();
+
+    CHECK(fn == nullptr);
+    CHECK(parser.hasError());
+    CHECK(parser.errorMessage() == "Expected ')' after parameter list");
+}
+
+TEST_CASE("parseDeclaration error: missing parameter type", "[parser][decl][error]") {
+    Parser parser = makeParser("int foo(a);");
+    auto fn = parser.parseDeclaration();
+
+    CHECK(fn == nullptr);
+    CHECK(parser.hasError());
+    CHECK(parser.errorMessage() == "Expected parameter type before 'a'");
+}
+
+TEST_CASE("parseDeclaration error: missing parameter name", "[parser][decl][error]") {
+    Parser parser = makeParser("int foo(int);");
+    auto fn = parser.parseDeclaration();
+
+    CHECK(fn == nullptr);
+    CHECK(parser.hasError());
+    CHECK(parser.errorMessage() == "Expected parameter name after 'int'");
+}
+
+TEST_CASE("parseDeclaration error: trailing comma in parameter list", "[parser][decl][error]") {
+    Parser parser = makeParser("int foo(int a, );");
+    auto fn = parser.parseDeclaration();
+
+    CHECK(fn == nullptr);
+    CHECK(parser.hasError());
+    CHECK(parser.errorMessage() == "Expected parameter declaration after ','");
+}
+
+TEST_CASE("parseDeclaration error: invalid parameter type 'void x'", "[parser][decl][error]") {
+    Parser parser = makeParser("int foo(void x);");
+    auto fn = parser.parseDeclaration();
+
+    CHECK(fn == nullptr);
+    CHECK(parser.hasError());
+    CHECK(parser.errorMessage() == "Parameter cannot have 'void' type");
+}
+
+TEST_CASE("parseDeclaration error: 'void' combined with comma in parameter list", "[parser][decl][error]") {
+    Parser parser = makeParser("int foo(void, int x);");
+    auto fn = parser.parseDeclaration();
+
+    CHECK(fn == nullptr);
+    CHECK(parser.hasError());
+    CHECK(parser.errorMessage() == "Expected ')' after 'void' in parameter list");
+}
+
+TEST_CASE("parseDeclaration error: missing body or prototype terminator at EOF", "[parser][decl][error]") {
+    Parser parser = makeParser("int foo(int x)");
+    auto fn = parser.parseDeclaration();
+
+    CHECK(fn == nullptr);
+    CHECK(parser.hasError());
+    CHECK(parser.errorMessage() == "Expected ';' or '{' after function declarator");
+}
+
+TEST_CASE("parseDeclaration error: unexpected token instead of ';' or '{'", "[parser][decl][error]") {
+    Parser parser = makeParser("int foo(int x) = 0;");
+    auto fn = parser.parseDeclaration();
+
+    CHECK(fn == nullptr);
+    CHECK(parser.hasError());
+    CHECK(parser.errorMessage() == "Expected ';' or '{' after function declarator, found '='");
+}
+
+TEST_CASE("parseDeclaration error: unclosed body '{' at EOF", "[parser][decl][error]") {
+    Parser parser = makeParser("int foo() { return 1;");
+    auto fn = parser.parseDeclaration();
+
+    CHECK(fn == nullptr);
+    CHECK(parser.hasError());
+    CHECK(parser.errorMessage() == "Expected '}' to close function body");
+}
+
+// -----------------------------------------------------------------------------
+// 35. Function AST Node Accessors and toString
+// -----------------------------------------------------------------------------
+TEST_CASE("Function: extended AST accessors and toString", "[ast][function]") {
+    Function fn("add", "int", SourceLocation{1, 1}, false);
+    fn.addParameter(std::make_unique<VariableDeclaration>("a", "int", nullptr, SourceLocation{1, 9}));
+    fn.addParameter(std::make_unique<VariableDeclaration>("b", "int", nullptr, SourceLocation{1, 16}));
+
+    CHECK(fn.getName() == "add");
+    CHECK(fn.getReturnType() == "int");
+    CHECK(fn.parameterCount() == 2);
+    CHECK(fn.getParameters().size() == 2);
+    CHECK(fn.bodyStatementCount() == 0);
+    CHECK(fn.isPrototype());
+    CHECK_FALSE(fn.isDefinition());
+
+    CHECK(fn.toString() == "Function: int add(int a, int b)");
+
+    fn.setIsDefinition(true);
+    CHECK(fn.isDefinition());
+    CHECK_FALSE(fn.isPrototype());
+}
+
 
 

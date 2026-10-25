@@ -1,5 +1,7 @@
 #include "driver.h"
+#include "ast/printer.h"
 #include "lexer/lexer.h"
+#include "parser/parser.h"
 
 #include <fstream>
 #include <iomanip>
@@ -16,7 +18,8 @@ static int printUsage(const char* programName) {
     std::cerr << "Usage:\n"
               << "  " << programName << " <input.c>\n"
               << "  " << programName << " <input.c> -o <output>\n"
-              << "  " << programName << " --dump-tokens <input.c>\n";
+              << "  " << programName << " --dump-tokens <input.c>\n"
+              << "  " << programName << " --dump-ast <input.c>\n";
     return 1;
 }
 
@@ -38,6 +41,60 @@ static int dumpTokens(const std::string& inputFile) {
     }
 
     return 0;
+}
+
+static int dumpAst(const std::string& inputFile) {
+    std::ifstream input(inputFile);
+    if (!input.good()) {
+        std::cerr << "cforge: error: file not found: " << inputFile << "\n";
+        return 1;
+    }
+
+    std::string source((std::istreambuf_iterator<char>(input)),
+                       std::istreambuf_iterator<char>());
+
+    Lexer lexer(std::move(source));
+    std::vector<Token> tokens = lexer.tokenize();
+
+    // Check for lexical errors
+    for (const Token& tok : tokens) {
+        if (isLexerError(tok)) {
+            std::cerr << "cforge: error: " << tok.lexeme << " at " << tok.line << ":" << tok.column << "\n";
+            return 1;
+        }
+    }
+
+    // Attempt to parse as translation unit (Program)
+    Parser programParser(tokens);
+    auto program = programParser.parseProgram();
+    if (program && programParser.isAtEnd() && !programParser.hasError()) {
+        ASTPrinter printer;
+        std::cout << printer.print(program.get());
+        return 0;
+    }
+
+    // If parseProgram did not succeed or consume all tokens, attempt parseExpression
+    Parser exprParser(tokens);
+    auto expr = exprParser.parseExpression();
+    if (expr && exprParser.isAtEnd() && !exprParser.hasError()) {
+        ASTPrinter printer;
+        std::cout << printer.print(expr.get());
+        return 0;
+    }
+
+    // Output relevant error
+    if (programParser.hasError()) {
+        std::cerr << "cforge: error: " << programParser.errorMessage() << "\n";
+    } else if (exprParser.hasError()) {
+        std::cerr << "cforge: error: " << exprParser.errorMessage() << "\n";
+    } else if (!programParser.isAtEnd()) {
+        std::cerr << "cforge: error: unexpected trailing tokens: '"
+                  << programParser.peek().lexeme << "'\n";
+    } else {
+        std::cerr << "cforge: error: failed to parse input\n";
+    }
+
+    return 1;
 }
 
 // ---------------------------------------------------------------------------
@@ -68,6 +125,13 @@ int main(int argc, char* argv[]) {
             return printUsage(argv[0]);
         }
         return dumpTokens(argv[2]);
+    }
+
+    if (std::string(argv[1]) == "--dump-ast") {
+        if (argc != 3) {
+            return printUsage(argv[0]);
+        }
+        return dumpAst(argv[2]);
     }
 
     // --- Populate DriverConfig ----------------------------------------------
