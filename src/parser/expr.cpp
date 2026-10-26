@@ -5,11 +5,13 @@
 // =============================================================================
 //
 // Precedence-climbing binary expression parser.
-// Precedence levels:
-//   Level 2 (higher): '*', '/', '%'
-//   Level 1 (lower):  '+', '-'
+// Precedence levels (highest to lowest among binary operators):
+//   Level 4: Multiplicative ('*', '/', '%')
+//   Level 3: Additive ('+', '-')
+//   Level 2: Relational ('<', '>', '<=', '>=')
+//   Level 1: Equality ('==', '!=')
 //
-// All five arithmetic operators are left-associative. Left-associativity is preserved by
+// All supported binary operators are left-associative. Left-associativity is preserved by
 // passing (precedence + 1) as the minimum precedence for the right-hand operand.
 //
 static int getOperatorPrecedence(const Token& tok) {
@@ -17,9 +19,16 @@ static int getOperatorPrecedence(const Token& tok) {
         return 0;
     }
     if (tok.lexeme == "*" || tok.lexeme == "/" || tok.lexeme == "%") {
-        return 2;
+        return 4;
     }
     if (tok.lexeme == "+" || tok.lexeme == "-") {
+        return 3;
+    }
+    if (tok.lexeme == "<" || tok.lexeme == ">" ||
+        tok.lexeme == "<=" || tok.lexeme == ">=") {
+        return 2;
+    }
+    if (tok.lexeme == "==" || tok.lexeme == "!=") {
         return 1;
     }
     return 0;
