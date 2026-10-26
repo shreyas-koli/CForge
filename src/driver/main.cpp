@@ -83,10 +83,13 @@ static int dumpAst(const std::string& inputFile) {
     }
 
     // Output relevant error
-    if (programParser.hasError()) {
+    bool isLikelyDeclaration = !tokens.empty() && tokens[0].type == TokenType::Keyword;
+    if (isLikelyDeclaration && programParser.hasError()) {
         std::cerr << "cforge: error: " << programParser.errorMessage() << "\n";
     } else if (exprParser.hasError()) {
         std::cerr << "cforge: error: " << exprParser.errorMessage() << "\n";
+    } else if (programParser.hasError()) {
+        std::cerr << "cforge: error: " << programParser.errorMessage() << "\n";
     } else if (!programParser.isAtEnd()) {
         std::cerr << "cforge: error: unexpected trailing tokens: '"
                   << programParser.peek().lexeme << "'\n";

@@ -6,17 +6,17 @@
 //
 // Precedence-climbing binary expression parser.
 // Precedence levels:
-//   Level 2 (higher): '*', '/'
+//   Level 2 (higher): '*', '/', '%'
 //   Level 1 (lower):  '+', '-'
 //
-// All four operators are left-associative. Left-associativity is preserved by
+// All five arithmetic operators are left-associative. Left-associativity is preserved by
 // passing (precedence + 1) as the minimum precedence for the right-hand operand.
 //
 static int getOperatorPrecedence(const Token& tok) {
     if (tok.type != TokenType::Operator) {
         return 0;
     }
-    if (tok.lexeme == "*" || tok.lexeme == "/") {
+    if (tok.lexeme == "*" || tok.lexeme == "/" || tok.lexeme == "%") {
         return 2;
     }
     if (tok.lexeme == "+" || tok.lexeme == "-") {
