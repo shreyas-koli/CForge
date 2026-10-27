@@ -578,6 +578,10 @@ Token Lexer::nextToken() {
                 advance();
                 return Token{TokenType::Operator, "<=", startLine, startColumn};
             }
+            if (peek() == '<') {
+                advance();
+                return Token{TokenType::Operator, "<<", startLine, startColumn};
+            }
             return Token{TokenType::Operator, "<", startLine, startColumn};
         }
         case '>': {
@@ -585,6 +589,10 @@ Token Lexer::nextToken() {
             if (peek() == '=') {
                 advance();
                 return Token{TokenType::Operator, ">=", startLine, startColumn};
+            }
+            if (peek() == '>') {
+                advance();
+                return Token{TokenType::Operator, ">>", startLine, startColumn};
             }
             return Token{TokenType::Operator, ">", startLine, startColumn};
         }

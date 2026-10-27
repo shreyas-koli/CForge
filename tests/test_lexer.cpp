@@ -1059,6 +1059,8 @@ TEST_CASE("Multi-character operators scan as TokenType::Operator", "[lexer][oper
         {"||", "||"},
         {"++", "++"},
         {"--", "--"},
+        {"<<", "<<"},
+        {">>", ">>"},
     };
 
     for (const auto& c : cases) {
@@ -1563,6 +1565,20 @@ TEST_CASE("Longest-match operators remain intact in source context",
     CHECK(operators == std::vector<std::string>{
         "==", "!=", "<=", ">=", "&&", "||", "++", "--",
         "==", "=", "++", "+", "--", "-", "&&", "&", "||", "|"});
+}
+
+TEST_CASE("Shift operators longest-match scanning '<<<' and '>>>'",
+          "[lexer][integration][shift]") {
+    auto tokens = lex("a << 2 >> 3 <<< 4 >>> 5 <= < >= >");
+    std::vector<std::string> operators;
+    for (const Token& token : tokens) {
+        if (token.type == TokenType::Operator) {
+            operators.push_back(token.lexeme);
+        }
+    }
+
+    CHECK(operators == std::vector<std::string>{
+        "<<", ">>", "<<", "<", ">>", ">", "<=", "<", ">=", ">"});
 }
 
 TEST_CASE("Literals preserve comment markers and escape source text",

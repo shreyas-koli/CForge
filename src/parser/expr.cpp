@@ -6,9 +6,13 @@
 //
 // Precedence-climbing binary expression parser.
 // Precedence levels (highest to lowest among binary operators):
-//   Level 4: Multiplicative ('*', '/', '%')
-//   Level 3: Additive ('+', '-')
-//   Level 2: Relational ('<', '>', '<=', '>=')
+//   Level 8: Multiplicative ('*', '/', '%')
+//   Level 7: Additive ('+', '-')
+//   Level 6: Shift ('<<', '>>')
+//   Level 5: Relational ('<', '>', '<=', '>=')
+//   Level 4: Bitwise AND ('&')
+//   Level 3: Bitwise XOR ('^')
+//   Level 2: Bitwise OR ('|')
 //   Level 1: Equality ('==', '!=')
 //
 // All supported binary operators are left-associative. Left-associativity is preserved by
@@ -19,13 +23,25 @@ static int getOperatorPrecedence(const Token& tok) {
         return 0;
     }
     if (tok.lexeme == "*" || tok.lexeme == "/" || tok.lexeme == "%") {
-        return 4;
+        return 8;
     }
     if (tok.lexeme == "+" || tok.lexeme == "-") {
-        return 3;
+        return 7;
+    }
+    if (tok.lexeme == "<<" || tok.lexeme == ">>") {
+        return 6;
     }
     if (tok.lexeme == "<" || tok.lexeme == ">" ||
         tok.lexeme == "<=" || tok.lexeme == ">=") {
+        return 5;
+    }
+    if (tok.lexeme == "&") {
+        return 4;
+    }
+    if (tok.lexeme == "^") {
+        return 3;
+    }
+    if (tok.lexeme == "|") {
         return 2;
     }
     if (tok.lexeme == "==" || tok.lexeme == "!=") {

@@ -74,6 +74,7 @@ add_executable(cforge_tests
     tests/parser/test_arithmetic_operators.cpp
     tests/parser/test_relational_operators.cpp
     tests/parser/test_equality_operators.cpp
+    tests/parser/test_bitwise_operators.cpp
     src/driver/pipeline.cpp
     src/lexer/token.cpp
     src/lexer/lexer.cpp

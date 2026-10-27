@@ -43,11 +43,15 @@ public:
     // Right-associative. Lowest expression precedence level.
     std::unique_ptr<Expression> parseAssignment();
 
-    // Precedence-climbing binary expression parser (Day 15, Day 21, Day 22, Day 23)
+    // Precedence-climbing binary expression parser (Day 15, Day 21, Day 22, Day 23, Day 25)
     // Precedence levels:
-    //   Level 4 (highest): '*', '/', '%'
-    //   Level 3:           '+', '-'
-    //   Level 2:           '<', '>', '<=', '>='
+    //   Level 8 (highest): '*', '/', '%'
+    //   Level 7:           '+', '-'
+    //   Level 6:           '<<', '>>'
+    //   Level 5:           '<', '>', '<=', '>='
+    //   Level 4:           '&'
+    //   Level 3:           '^'
+    //   Level 2:           '|'
     //   Level 1:           '==', '!='
     // Left-associative: recursive right-hand calls use precedence + 1.
     std::unique_ptr<Expression> parseBinaryExpression(int minPrecedence = 1);
