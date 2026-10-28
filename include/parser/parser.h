@@ -43,6 +43,15 @@ public:
     // Right-associative. Lowest expression precedence level.
     std::unique_ptr<Expression> parseAssignment();
 
+    // Conditional / ternary operator expression parsing (Day 26)
+    // Operators: '?' and ':'
+    // Grammar:
+    //   conditional-expression:
+    //       binary-expression
+    //       binary-expression '?' expression ':' conditional-expression
+    // Right-associative. Precedence between binary expressions and assignment.
+    std::unique_ptr<Expression> parseConditional();
+
     // Precedence-climbing binary expression parser (Day 15, Day 21, Day 22, Day 23, Day 25)
     // Precedence levels:
     //   Level 8 (highest): '*', '/', '%'

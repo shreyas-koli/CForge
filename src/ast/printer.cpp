@@ -2,6 +2,7 @@
 
 #include "ast/assign_expr.h"
 #include "ast/binary_expr.h"
+#include "ast/conditional_expr.h"
 #include "ast/function.h"
 #include "ast/identifier_expression.h"
 #include "ast/literal_expression.h"
@@ -45,6 +46,8 @@ void ASTPrinter::printNode(std::ostream& out, const ASTNode* node, int level) co
         printBinary(out, bin, level);
     } else if (auto* assign = dynamic_cast<const AssignExpr*>(node)) {
         printAssign(out, assign, level);
+    } else if (auto* cond = dynamic_cast<const ConditionalExpr*>(node)) {
+        printConditional(out, cond, level);
     } else if (auto* un = dynamic_cast<const UnaryExpr*>(node)) {
         printUnary(out, un, level);
     } else if (auto* lit = dynamic_cast<const LiteralExpression*>(node)) {
@@ -129,6 +132,16 @@ void ASTPrinter::printUnary(std::ostream& out, const UnaryExpr* un, int level) c
     out << makeIndent(level) << "UnaryExpr: " << un->op() << "\n";
     out << makeIndent(level + 1) << "Operand:\n";
     printNode(out, un->operand(), level + 2);
+}
+
+void ASTPrinter::printConditional(std::ostream& out, const ConditionalExpr* cond, int level) const {
+    out << makeIndent(level) << "ConditionalExpr\n";
+    out << makeIndent(level + 1) << "Condition:\n";
+    printNode(out, cond->condition(), level + 2);
+    out << makeIndent(level + 1) << "Then:\n";
+    printNode(out, cond->thenExpr(), level + 2);
+    out << makeIndent(level + 1) << "Else:\n";
+    printNode(out, cond->elseExpr(), level + 2);
 }
 
 std::string printAST(const ASTNode* node, int indentSpaces) {

@@ -136,19 +136,75 @@ static bool isAssignmentOperator(const Token& tok) {
 }
 
 // =============================================================================
+// parseConditional() — Day 26 Ternary Conditional Expressions
+// =============================================================================
+//
+// Grammar:
+//   conditional-expression:
+//       binary-expression
+//       binary-expression '?' expression ':' conditional-expression
+//
+// The conditional operator '? :' has lower precedence than binary expressions
+// and higher precedence than assignment. It is right-associative:
+//   "a ? b : c ? d : e" -> a ? b : (c ? d : e)
+//   "a + b ? c : d"     -> (a + b) ? c : d
+//
+std::unique_ptr<Expression> Parser::parseConditional() {
+    std::unique_ptr<Expression> condition = parseBinaryExpression(1);
+    if (!condition) {
+        return nullptr;
+    }
+
+    if (!isAtEnd() && peek().lexeme == "?") {
+        advance(); // consume '?'
+        SourceLocation loc = condition->location();
+
+        std::unique_ptr<Expression> thenExpr = parseExpression();
+        if (!thenExpr) {
+            if (!hasError()) {
+                error("Expected expression after '?'");
+            }
+            return nullptr;
+        }
+
+        if (isAtEnd() || peek().lexeme != ":") {
+            if (!hasError()) {
+                error("Expected ':' in conditional expression");
+            }
+            return nullptr;
+        }
+        advance(); // consume ':'
+
+        std::unique_ptr<Expression> elseExpr = parseConditional();
+        if (!elseExpr) {
+            if (!hasError()) {
+                error("Expected expression after ':'");
+            }
+            return nullptr;
+        }
+
+        return std::make_unique<ConditionalExpr>(
+            std::move(condition), std::move(thenExpr), std::move(elseExpr), loc);
+    }
+
+    return condition;
+}
+
+// =============================================================================
 // parseAssignment() — Day 17 Assignment Expressions
 // =============================================================================
 //
 // Grammar:
 //   assignment-expression:
-//       binary-expression [ ('=' | '+=' | '-=' | '*=' | '/=') assignment-expression ]
+//       conditional-expression [ ('=' | '+=' | '-=' | '*=' | '/=') assignment-expression ]
 //
 // Assignment has the lowest precedence level and is right-associative:
 //   "a = b = c" -> a = (b = c)
 //   "x = a + b * c" -> x = (a + (b * c))
+//   "x = condition ? a : b" -> x = (condition ? a : b)
 //
 std::unique_ptr<Expression> Parser::parseAssignment() {
-    std::unique_ptr<Expression> left = parseBinaryExpression(1);
+    std::unique_ptr<Expression> left = parseConditional();
     if (!left) {
         return nullptr;
     }

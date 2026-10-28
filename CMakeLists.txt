@@ -29,6 +29,7 @@ add_executable(cforge
     src/ast/literal_expression.cpp
     src/ast/identifier_expression.cpp
     src/ast/assign_expr.cpp
+    src/ast/conditional_expr.cpp
     src/ast/binary_expr.cpp
     src/ast/unary_expr.cpp
     src/ast/printer.cpp
@@ -75,6 +76,8 @@ add_executable(cforge_tests
     tests/parser/test_relational_operators.cpp
     tests/parser/test_equality_operators.cpp
     tests/parser/test_bitwise_operators.cpp
+    tests/parser/test_conditional_operator.cpp
+    tests/expr/test_expression_integration.cpp
     src/driver/pipeline.cpp
     src/lexer/token.cpp
     src/lexer/lexer.cpp
@@ -87,6 +90,7 @@ add_executable(cforge_tests
     src/ast/literal_expression.cpp
     src/ast/identifier_expression.cpp
     src/ast/assign_expr.cpp
+    src/ast/conditional_expr.cpp
     src/ast/binary_expr.cpp
     src/ast/unary_expr.cpp
     src/ast/printer.cpp

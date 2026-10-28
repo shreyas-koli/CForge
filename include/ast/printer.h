@@ -50,6 +50,7 @@ private:
     void printBinary(std::ostream& out, const BinaryExpr* bin, int level) const;
     void printUnary(std::ostream& out, const UnaryExpr* un, int level) const;
     void printAssign(std::ostream& out, const AssignExpr* assign, int level) const;
+    void printConditional(std::ostream& out, const ConditionalExpr* cond, int level) const;
 
     std::string makeIndent(int level) const;
 };

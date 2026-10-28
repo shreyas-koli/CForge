@@ -672,7 +672,9 @@ Token Lexer::nextToken() {
         case ']':
         case ';':
         case ',':
-        case '.': {
+        case '.':
+        case '?':
+        case ':': {
             advance();
             return Token{TokenType::Punctuation, std::string(1, c), startLine, startColumn};
         }
