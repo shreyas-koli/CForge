@@ -13,6 +13,7 @@ class IdentifierExpression;
 class BinaryExpr;
 class UnaryExpr;
 class AssignExpr;
+class ConditionalExpr;
 
 // =============================================================================
 // ASTPrinter — Formats and prints CForge ASTs in a readable tree format (Day 19)

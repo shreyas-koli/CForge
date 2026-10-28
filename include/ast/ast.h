@@ -12,4 +12,5 @@
 #include "ast/binary_expr.h"
 #include "ast/unary_expr.h"
 #include "ast/assign_expr.h"
+#include "ast/conditional_expr.h"
 #include "ast/printer.h"

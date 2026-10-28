@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ast/assign_expr.h"
+#include "ast/conditional_expr.h"
 #include "ast/binary_expr.h"
 #include "ast/expression.h"
 #include "ast/identifier_expression.h"
