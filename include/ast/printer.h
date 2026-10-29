@@ -14,6 +14,11 @@ class BinaryExpr;
 class UnaryExpr;
 class AssignExpr;
 class ConditionalExpr;
+class CompoundStmt;
+class IfStmt;
+class WhileStmt;
+class DoWhileStmt;
+class ForStmt;
 
 // =============================================================================
 // ASTPrinter — Formats and prints CForge ASTs in a readable tree format (Day 19)
@@ -51,6 +56,11 @@ private:
     void printUnary(std::ostream& out, const UnaryExpr* un, int level) const;
     void printAssign(std::ostream& out, const AssignExpr* assign, int level) const;
     void printConditional(std::ostream& out, const ConditionalExpr* cond, int level) const;
+    void printCompound(std::ostream& out, const CompoundStmt* compound, int level) const;
+    void printIf(std::ostream& out, const IfStmt* ifStmt, int level) const;
+    void printWhile(std::ostream& out, const WhileStmt* whileStmt, int level) const;
+    void printDoWhile(std::ostream& out, const DoWhileStmt* doWhileStmt, int level) const;
+    void printFor(std::ostream& out, const ForStmt* forStmt, int level) const;
 
     std::string makeIndent(int level) const;
 };

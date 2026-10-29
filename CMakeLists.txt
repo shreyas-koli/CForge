@@ -22,6 +22,11 @@ add_executable(cforge
     src/lexer/lexer.cpp
     src/ast/ast_node.cpp
     src/ast/statement.cpp
+    src/ast/compound_stmt.cpp
+    src/ast/if_stmt.cpp
+    src/ast/while_stmt.cpp
+    src/ast/do_while_stmt.cpp
+    src/ast/for_stmt.cpp
     src/ast/expression.cpp
     src/ast/program.cpp
     src/ast/function.cpp
@@ -36,6 +41,7 @@ add_executable(cforge
     src/parser/parser.cpp
     src/parser/expr.cpp
     src/parser/decl.cpp
+    src/parser/stmt.cpp
 )
 
 # -----------------------------------------------------------------------------
@@ -78,11 +84,21 @@ add_executable(cforge_tests
     tests/parser/test_bitwise_operators.cpp
     tests/parser/test_conditional_operator.cpp
     tests/expr/test_expression_integration.cpp
+    tests/parser/test_compound_statement.cpp
+    tests/parser/test_if_statement.cpp
+    tests/parser/test_while_statement.cpp
+    tests/parser/test_do_while_statement.cpp
+    tests/parser/test_for_statement.cpp
     src/driver/pipeline.cpp
     src/lexer/token.cpp
     src/lexer/lexer.cpp
     src/ast/ast_node.cpp
     src/ast/statement.cpp
+    src/ast/compound_stmt.cpp
+    src/ast/if_stmt.cpp
+    src/ast/while_stmt.cpp
+    src/ast/do_while_stmt.cpp
+    src/ast/for_stmt.cpp
     src/ast/expression.cpp
     src/ast/program.cpp
     src/ast/function.cpp
@@ -97,6 +113,7 @@ add_executable(cforge_tests
     src/parser/parser.cpp
     src/parser/expr.cpp
     src/parser/decl.cpp
+    src/parser/stmt.cpp
 )
 target_link_libraries(cforge_tests PRIVATE Catch2::Catch2)
 

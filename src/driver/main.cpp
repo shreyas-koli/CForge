@@ -73,6 +73,15 @@ static int dumpAst(const std::string& inputFile) {
         return 0;
     }
 
+    // Attempt to parse as statement (e.g. compound statement)
+    Parser stmtParser(tokens);
+    auto stmt = stmtParser.parseStatement();
+    if (stmt && stmtParser.isAtEnd() && !stmtParser.hasError()) {
+        ASTPrinter printer;
+        std::cout << printer.print(stmt.get());
+        return 0;
+    }
+
     // If parseProgram did not succeed or consume all tokens, attempt parseExpression
     Parser exprParser(tokens);
     auto expr = exprParser.parseExpression();

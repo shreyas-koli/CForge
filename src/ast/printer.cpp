@@ -2,13 +2,18 @@
 
 #include "ast/assign_expr.h"
 #include "ast/binary_expr.h"
+#include "ast/compound_stmt.h"
 #include "ast/conditional_expr.h"
+#include "ast/do_while_stmt.h"
+#include "ast/for_stmt.h"
 #include "ast/function.h"
 #include "ast/identifier_expression.h"
+#include "ast/if_stmt.h"
 #include "ast/literal_expression.h"
 #include "ast/program.h"
 #include "ast/unary_expr.h"
 #include "ast/variable_declaration.h"
+#include "ast/while_stmt.h"
 
 #include <iostream>
 #include <sstream>
@@ -42,6 +47,16 @@ void ASTPrinter::printNode(std::ostream& out, const ASTNode* node, int level) co
         printFunction(out, fn, level);
     } else if (auto* var = dynamic_cast<const VariableDeclaration*>(node)) {
         printVariableDeclaration(out, var, level);
+    } else if (auto* compound = dynamic_cast<const CompoundStmt*>(node)) {
+        printCompound(out, compound, level);
+    } else if (auto* ifStmt = dynamic_cast<const IfStmt*>(node)) {
+        printIf(out, ifStmt, level);
+    } else if (auto* whileStmt = dynamic_cast<const WhileStmt*>(node)) {
+        printWhile(out, whileStmt, level);
+    } else if (auto* doWhileStmt = dynamic_cast<const DoWhileStmt*>(node)) {
+        printDoWhile(out, doWhileStmt, level);
+    } else if (auto* forStmt = dynamic_cast<const ForStmt*>(node)) {
+        printFor(out, forStmt, level);
     } else if (auto* bin = dynamic_cast<const BinaryExpr*>(node)) {
         printBinary(out, bin, level);
     } else if (auto* assign = dynamic_cast<const AssignExpr*>(node)) {
@@ -142,6 +157,69 @@ void ASTPrinter::printConditional(std::ostream& out, const ConditionalExpr* cond
     printNode(out, cond->thenExpr(), level + 2);
     out << makeIndent(level + 1) << "Else:\n";
     printNode(out, cond->elseExpr(), level + 2);
+}
+
+void ASTPrinter::printCompound(std::ostream& out, const CompoundStmt* compound, int level) const {
+    out << makeIndent(level) << "CompoundStmt\n";
+    for (const auto& stmt : compound->statements()) {
+        printNode(out, stmt.get(), level + 1);
+    }
+}
+
+void ASTPrinter::printIf(std::ostream& out, const IfStmt* ifStmt, int level) const {
+    out << makeIndent(level) << "IfStmt\n";
+    out << makeIndent(level + 1) << "Condition:\n";
+    printNode(out, ifStmt->condition(), level + 2);
+    out << makeIndent(level + 1) << "Then:\n";
+    printNode(out, ifStmt->thenBranch(), level + 2);
+    if (ifStmt->hasElse()) {
+        out << makeIndent(level + 1) << "Else:\n";
+        printNode(out, ifStmt->elseBranch(), level + 2);
+    }
+}
+
+void ASTPrinter::printWhile(std::ostream& out, const WhileStmt* whileStmt, int level) const {
+    out << makeIndent(level) << "WhileStmt\n";
+    out << makeIndent(level + 1) << "Condition:\n";
+    printNode(out, whileStmt->condition(), level + 2);
+    out << makeIndent(level + 1) << "Body:\n";
+    printNode(out, whileStmt->body(), level + 2);
+}
+
+void ASTPrinter::printDoWhile(std::ostream& out, const DoWhileStmt* doWhileStmt, int level) const {
+    out << makeIndent(level) << "DoWhileStmt\n";
+    out << makeIndent(level + 1) << "Body:\n";
+    printNode(out, doWhileStmt->body(), level + 2);
+    out << makeIndent(level + 1) << "Condition:\n";
+    printNode(out, doWhileStmt->condition(), level + 2);
+}
+
+void ASTPrinter::printFor(std::ostream& out, const ForStmt* forStmt, int level) const {
+    out << makeIndent(level) << "ForStmt\n";
+
+    out << makeIndent(level + 1) << "Initializer:\n";
+    if (forStmt->initializer()) {
+        printNode(out, forStmt->initializer(), level + 2);
+    } else {
+        out << makeIndent(level + 2) << "(omitted)\n";
+    }
+
+    out << makeIndent(level + 1) << "Condition:\n";
+    if (forStmt->condition()) {
+        printNode(out, forStmt->condition(), level + 2);
+    } else {
+        out << makeIndent(level + 2) << "(omitted)\n";
+    }
+
+    out << makeIndent(level + 1) << "Post:\n";
+    if (forStmt->post()) {
+        printNode(out, forStmt->post(), level + 2);
+    } else {
+        out << makeIndent(level + 2) << "(omitted)\n";
+    }
+
+    out << makeIndent(level + 1) << "Body:\n";
+    printNode(out, forStmt->body(), level + 2);
 }
 
 std::string printAST(const ASTNode* node, int indentSpaces) {

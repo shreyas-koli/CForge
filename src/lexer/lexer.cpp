@@ -75,6 +75,7 @@ TokenType lookupKeyword(const std::string& text) {
         {"if",     TokenType::Keyword},
         {"else",   TokenType::Keyword},
         {"while",  TokenType::Keyword},
+        {"do",     TokenType::Keyword},
         {"for",    TokenType::Keyword},
         {"return", TokenType::Keyword},
     };

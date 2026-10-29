@@ -34,6 +34,42 @@ public:
     //       type-specifier identifier '(' parameter-list? ')' '{' ... '}'
     std::unique_ptr<Function> parseFunctionDeclaration();
 
+    // Statement parsing (Day 28)
+    // Entry point for statement parsing. Currently parses compound statements.
+    std::unique_ptr<Statement> parseStatement();
+
+    // Compound statement parsing (Day 28)
+    // Grammar:
+    //   compound-statement:
+    //       '{' statement-list? '}'
+    //   statement-list:
+    //       statement*
+    std::unique_ptr<CompoundStmt> parseCompoundStatement();
+
+    // Selection statement parsing — 'if' (Day 29)
+    // Grammar:
+    //   selection-statement:
+    //       'if' '(' expression ')' statement
+    std::unique_ptr<IfStmt> parseIfStatement();
+
+    // Iteration statement parsing — 'while' (Day 31)
+    // Grammar:
+    //   iteration-statement:
+    //       'while' '(' expression ')' statement
+    std::unique_ptr<WhileStmt> parseWhileStatement();
+
+    // Iteration statement parsing — 'do-while' (Day 32)
+    // Grammar:
+    //   iteration-statement:
+    //       'do' statement 'while' '(' expression ')' ';'
+    std::unique_ptr<DoWhileStmt> parseDoWhileStatement();
+
+    // Iteration statement parsing — 'for' (Day 33)
+    // Grammar:
+    //   iteration-statement:
+    //       'for' '(' expression? ';' expression? ';' expression? ')' statement
+    std::unique_ptr<ForStmt> parseForStatement();
+
     // Expression parsing (Day 13 — Day 17)
     // Top-level expression entry point delegating to assignment parsing.
     std::unique_ptr<Expression> parseExpression();

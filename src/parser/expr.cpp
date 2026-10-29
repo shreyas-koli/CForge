@@ -92,7 +92,19 @@ std::unique_ptr<Expression> Parser::parseUnary() {
         return std::make_unique<UnaryExpr>(opToken.lexeme, std::move(operand), loc);
     }
 
-    return parsePrimary();
+    auto expr = parsePrimary();
+    if (!expr) {
+        return nullptr;
+    }
+
+    // Postfix operators ('++' and '--')
+    while (!isAtEnd() && check(TokenType::Operator) &&
+           (peek().lexeme == "++" || peek().lexeme == "--")) {
+        Token opToken = advance();
+        expr = std::make_unique<UnaryExpr>(opToken.lexeme, std::move(expr), expr->location());
+    }
+
+    return expr;
 }
 
 std::unique_ptr<Expression> Parser::parseBinaryExpression(int minPrecedence) {

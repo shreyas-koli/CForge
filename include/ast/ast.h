@@ -2,6 +2,12 @@
 
 #include "ast/ast_node.h"
 #include "ast/statement.h"
+#include "ast/compound_stmt.h"
+#include "ast/if_stmt.h"
+#include "ast/while_stmt.h"
+#include "ast/do_while_stmt.h"
+#include "ast/for_stmt.h"
+#include "ast/stmt.h"
 #include "ast/expression.h"
 #include "ast/program.h"
 #include "ast/function.h"
