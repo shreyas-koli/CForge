@@ -2,8 +2,10 @@
 
 #include "ast/assign_expr.h"
 #include "ast/binary_expr.h"
+#include "ast/break_stmt.h"
 #include "ast/compound_stmt.h"
 #include "ast/conditional_expr.h"
+#include "ast/continue_stmt.h"
 #include "ast/do_while_stmt.h"
 #include "ast/for_stmt.h"
 #include "ast/function.h"
@@ -57,6 +59,10 @@ void ASTPrinter::printNode(std::ostream& out, const ASTNode* node, int level) co
         printDoWhile(out, doWhileStmt, level);
     } else if (auto* forStmt = dynamic_cast<const ForStmt*>(node)) {
         printFor(out, forStmt, level);
+    } else if (auto* breakStmt = dynamic_cast<const BreakStmt*>(node)) {
+        printBreak(out, breakStmt, level);
+    } else if (auto* continueStmt = dynamic_cast<const ContinueStmt*>(node)) {
+        printContinue(out, continueStmt, level);
     } else if (auto* bin = dynamic_cast<const BinaryExpr*>(node)) {
         printBinary(out, bin, level);
     } else if (auto* assign = dynamic_cast<const AssignExpr*>(node)) {
@@ -220,6 +226,16 @@ void ASTPrinter::printFor(std::ostream& out, const ForStmt* forStmt, int level) 
 
     out << makeIndent(level + 1) << "Body:\n";
     printNode(out, forStmt->body(), level + 2);
+}
+
+void ASTPrinter::printBreak(std::ostream& out, const BreakStmt* breakStmt, int level) const {
+    (void)breakStmt;
+    out << makeIndent(level) << "BreakStmt\n";
+}
+
+void ASTPrinter::printContinue(std::ostream& out, const ContinueStmt* contStmt, int level) const {
+    (void)contStmt;
+    out << makeIndent(level) << "ContinueStmt\n";
 }
 
 std::string printAST(const ASTNode* node, int indentSpaces) {

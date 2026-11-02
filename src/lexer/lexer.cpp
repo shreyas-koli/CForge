@@ -74,10 +74,12 @@ TokenType lookupKeyword(const std::string& text) {
         {"void",   TokenType::Keyword},
         {"if",     TokenType::Keyword},
         {"else",   TokenType::Keyword},
-        {"while",  TokenType::Keyword},
-        {"do",     TokenType::Keyword},
-        {"for",    TokenType::Keyword},
-        {"return", TokenType::Keyword},
+        {"while",    TokenType::Keyword},
+        {"do",       TokenType::Keyword},
+        {"for",      TokenType::Keyword},
+        {"break",    TokenType::Keyword},
+        {"continue", TokenType::Keyword},
+        {"return",   TokenType::Keyword},
     };
 
     auto it = keywords.find(text);

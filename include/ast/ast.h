@@ -7,6 +7,8 @@
 #include "ast/while_stmt.h"
 #include "ast/do_while_stmt.h"
 #include "ast/for_stmt.h"
+#include "ast/break_stmt.h"
+#include "ast/continue_stmt.h"
 #include "ast/stmt.h"
 #include "ast/expression.h"
 #include "ast/program.h"

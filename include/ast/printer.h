@@ -19,6 +19,8 @@ class IfStmt;
 class WhileStmt;
 class DoWhileStmt;
 class ForStmt;
+class BreakStmt;
+class ContinueStmt;
 
 // =============================================================================
 // ASTPrinter — Formats and prints CForge ASTs in a readable tree format (Day 19)
@@ -61,6 +63,8 @@ private:
     void printWhile(std::ostream& out, const WhileStmt* whileStmt, int level) const;
     void printDoWhile(std::ostream& out, const DoWhileStmt* doWhileStmt, int level) const;
     void printFor(std::ostream& out, const ForStmt* forStmt, int level) const;
+    void printBreak(std::ostream& out, const BreakStmt* breakStmt, int level) const;
+    void printContinue(std::ostream& out, const ContinueStmt* contStmt, int level) const;
 
     std::string makeIndent(int level) const;
 };

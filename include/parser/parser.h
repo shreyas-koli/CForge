@@ -70,6 +70,14 @@ public:
     //       'for' '(' expression? ';' expression? ';' expression? ')' statement
     std::unique_ptr<ForStmt> parseForStatement();
 
+    // Jump statement parsing — 'break' and 'continue' (Day 34)
+    // Grammar:
+    //   jump-statement:
+    //       'break' ';'
+    //       'continue' ';'
+    std::unique_ptr<BreakStmt> parseBreakStatement();
+    std::unique_ptr<ContinueStmt> parseContinueStatement();
+
     // Expression parsing (Day 13 — Day 17)
     // Top-level expression entry point delegating to assignment parsing.
     std::unique_ptr<Expression> parseExpression();

@@ -6,6 +6,7 @@
 //
 // Grammar:
 //   statement:
+//       jump-statement
 //       iteration-statement
 //       selection-statement
 //       compound-statement
@@ -13,6 +14,16 @@
 std::unique_ptr<Statement> Parser::parseStatement() {
     if (isAtEnd()) {
         return nullptr;
+    }
+
+    // Jump statement 'break' (Day 34)
+    if (check(TokenType::Keyword) && peek().lexeme == "break") {
+        return parseBreakStatement();
+    }
+
+    // Jump statement 'continue' (Day 34)
+    if (check(TokenType::Keyword) && peek().lexeme == "continue") {
+        return parseContinueStatement();
     }
 
     // Iteration statement 'while' (Day 31)
@@ -405,7 +416,67 @@ std::unique_ptr<ForStmt> Parser::parseForStatement() {
         std::move(initializer), std::move(condition), std::move(post), std::move(body), loc);
 }
 
+// =============================================================================
+// parseBreakStatement() — Day 34 Break Statement
+// =============================================================================
+//
+// Grammar:
+//   jump-statement:
+//       'break' ';'
+//
+// Source location records the location of the 'break' keyword.
+//
+std::unique_ptr<BreakStmt> Parser::parseBreakStatement() {
+    if (isAtEnd() || !check(TokenType::Keyword) || peek().lexeme != "break") {
+        if (!hasError()) {
+            error("Expected 'break'");
+        }
+        return nullptr;
+    }
 
+    Token breakToken = advance(); // consume 'break'
+    SourceLocation loc{breakToken.line, breakToken.column};
 
+    if (isAtEnd() || !check(TokenType::Punctuation) || peek().lexeme != ";") {
+        if (!hasError()) {
+            error("Expected ';' after 'break'");
+        }
+        return nullptr;
+    }
+    advance(); // consume ';'
 
+    return std::make_unique<BreakStmt>(loc);
+}
+
+// =============================================================================
+// parseContinueStatement() — Day 34 Continue Statement
+// =============================================================================
+//
+// Grammar:
+//   jump-statement:
+//       'continue' ';'
+//
+// Source location records the location of the 'continue' keyword.
+//
+std::unique_ptr<ContinueStmt> Parser::parseContinueStatement() {
+    if (isAtEnd() || !check(TokenType::Keyword) || peek().lexeme != "continue") {
+        if (!hasError()) {
+            error("Expected 'continue'");
+        }
+        return nullptr;
+    }
+
+    Token continueToken = advance(); // consume 'continue'
+    SourceLocation loc{continueToken.line, continueToken.column};
+
+    if (isAtEnd() || !check(TokenType::Punctuation) || peek().lexeme != ";") {
+        if (!hasError()) {
+            error("Expected ';' after 'continue'");
+        }
+        return nullptr;
+    }
+    advance(); // consume ';'
+
+    return std::make_unique<ContinueStmt>(loc);
+}
 

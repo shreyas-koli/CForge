@@ -27,6 +27,8 @@ add_executable(cforge
     src/ast/while_stmt.cpp
     src/ast/do_while_stmt.cpp
     src/ast/for_stmt.cpp
+    src/ast/break_stmt.cpp
+    src/ast/continue_stmt.cpp
     src/ast/expression.cpp
     src/ast/program.cpp
     src/ast/function.cpp
@@ -89,6 +91,8 @@ add_executable(cforge_tests
     tests/parser/test_while_statement.cpp
     tests/parser/test_do_while_statement.cpp
     tests/parser/test_for_statement.cpp
+    tests/parser/test_jump_statements.cpp
+    tests/parser/control_flow/test_control_flow_integration.cpp
     src/driver/pipeline.cpp
     src/lexer/token.cpp
     src/lexer/lexer.cpp
@@ -99,6 +103,8 @@ add_executable(cforge_tests
     src/ast/while_stmt.cpp
     src/ast/do_while_stmt.cpp
     src/ast/for_stmt.cpp
+    src/ast/break_stmt.cpp
+    src/ast/continue_stmt.cpp
     src/ast/expression.cpp
     src/ast/program.cpp
     src/ast/function.cpp
