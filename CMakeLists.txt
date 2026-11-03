@@ -44,6 +44,7 @@ add_executable(cforge
     src/parser/expr.cpp
     src/parser/decl.cpp
     src/parser/stmt.cpp
+    src/types/type.cpp
 )
 
 # -----------------------------------------------------------------------------
@@ -93,6 +94,7 @@ add_executable(cforge_tests
     tests/parser/test_for_statement.cpp
     tests/parser/test_jump_statements.cpp
     tests/parser/control_flow/test_control_flow_integration.cpp
+    tests/types/test_primitive_types.cpp
     src/driver/pipeline.cpp
     src/lexer/token.cpp
     src/lexer/lexer.cpp
@@ -120,6 +122,7 @@ add_executable(cforge_tests
     src/parser/expr.cpp
     src/parser/decl.cpp
     src/parser/stmt.cpp
+    src/types/type.cpp
 )
 target_link_libraries(cforge_tests PRIVATE Catch2::Catch2)
 

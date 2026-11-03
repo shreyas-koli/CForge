@@ -2,18 +2,14 @@
 #include "ast/function.h"
 #include "ast/variable_declaration.h"
 #include "ast/program.h"
+#include "types/type.h"
 
 // =============================================================================
-// Helper Functions for Declaration Parsing (Day 18)
+// Helper Functions for Declaration Parsing (Day 18 & Day 36)
 // =============================================================================
 
 static bool isTypeSpecifier(const Token& tok) {
-    if (tok.type == TokenType::Keyword) {
-        return tok.lexeme == "int" || tok.lexeme == "char" ||
-               tok.lexeme == "float" || tok.lexeme == "double" ||
-               tok.lexeme == "void";
-    }
-    return false;
+    return isPrimitiveTypeToken(tok);
 }
 
 // =============================================================================
