@@ -8,6 +8,7 @@
 class Program;
 class Function;
 class VariableDeclaration;
+class VarDecl;
 class LiteralExpression;
 class IdentifierExpression;
 class BinaryExpr;
@@ -52,6 +53,7 @@ private:
     void printProgram(std::ostream& out, const Program* prog, int level) const;
     void printFunction(std::ostream& out, const Function* fn, int level) const;
     void printVariableDeclaration(std::ostream& out, const VariableDeclaration* var, int level) const;
+    void printVarDecl(std::ostream& out, const VarDecl* var, int level) const;
     void printLiteral(std::ostream& out, const LiteralExpression* lit, int level) const;
     void printIdentifier(std::ostream& out, const IdentifierExpression* id, int level) const;
     void printBinary(std::ostream& out, const BinaryExpr* bin, int level) const;

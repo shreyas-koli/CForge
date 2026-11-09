@@ -15,6 +15,7 @@
 #include "ast/program.h"
 #include "ast/unary_expr.h"
 #include "ast/variable_declaration.h"
+#include "ast/var_decl.h"
 #include "ast/while_stmt.h"
 
 #include <iostream>
@@ -49,6 +50,8 @@ void ASTPrinter::printNode(std::ostream& out, const ASTNode* node, int level) co
         printFunction(out, fn, level);
     } else if (auto* var = dynamic_cast<const VariableDeclaration*>(node)) {
         printVariableDeclaration(out, var, level);
+    } else if (auto* vd = dynamic_cast<const VarDecl*>(node)) {
+        printVarDecl(out, vd, level);
     } else if (auto* compound = dynamic_cast<const CompoundStmt*>(node)) {
         printCompound(out, compound, level);
     } else if (auto* ifStmt = dynamic_cast<const IfStmt*>(node)) {
@@ -118,6 +121,15 @@ void ASTPrinter::printFunction(std::ostream& out, const Function* fn, int level)
 void ASTPrinter::printVariableDeclaration(std::ostream& out, const VariableDeclaration* var, int level) const {
     out << makeIndent(level) << "VariableDeclaration: "
         << var->type() << " " << var->name() << "\n";
+    if (var->hasInitializer()) {
+        out << makeIndent(level + 1) << "Initializer:\n";
+        printNode(out, var->initializer(), level + 2);
+    }
+}
+
+void ASTPrinter::printVarDecl(std::ostream& out, const VarDecl* var, int level) const {
+    out << makeIndent(level) << "VarDecl: "
+        << (var->type() ? var->type()->toString() : "<unknown>") << " " << var->name() << "\n";
     if (var->hasInitializer()) {
         out << makeIndent(level + 1) << "Initializer:\n";
         printNode(out, var->initializer(), level + 2);

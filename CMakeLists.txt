@@ -33,6 +33,7 @@ add_executable(cforge
     src/ast/program.cpp
     src/ast/function.cpp
     src/ast/variable_declaration.cpp
+    src/ast/var_decl.cpp
     src/ast/literal_expression.cpp
     src/ast/identifier_expression.cpp
     src/ast/assign_expr.cpp
@@ -95,6 +96,7 @@ add_executable(cforge_tests
     tests/parser/test_jump_statements.cpp
     tests/parser/control_flow/test_control_flow_integration.cpp
     tests/types/test_primitive_types.cpp
+    tests/parser/test_variable_declaration.cpp
     src/driver/pipeline.cpp
     src/lexer/token.cpp
     src/lexer/lexer.cpp
@@ -111,6 +113,7 @@ add_executable(cforge_tests
     src/ast/program.cpp
     src/ast/function.cpp
     src/ast/variable_declaration.cpp
+    src/ast/var_decl.cpp
     src/ast/literal_expression.cpp
     src/ast/identifier_expression.cpp
     src/ast/assign_expr.cpp

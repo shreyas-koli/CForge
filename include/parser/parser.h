@@ -34,6 +34,13 @@ public:
     //       type-specifier identifier '(' parameter-list? ')' '{' ... '}'
     std::unique_ptr<Function> parseFunctionDeclaration();
 
+    // Variable declaration parsing (Day 37)
+    // Grammar:
+    //   variable-declaration:
+    //       type-specifier identifier ( '=' expression )? ';'
+    std::unique_ptr<VarDecl> parseVarDecl();
+    std::unique_ptr<VarDecl> parseVariableDeclaration();
+
     // Statement parsing (Day 28)
     // Entry point for statement parsing. Currently parses compound statements.
     std::unique_ptr<Statement> parseStatement();

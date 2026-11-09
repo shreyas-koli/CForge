@@ -1,6 +1,7 @@
 #include "parser/parser.h"
 #include "ast/function.h"
 #include "ast/variable_declaration.h"
+#include "ast/var_decl.h"
 #include "ast/program.h"
 #include "types/type.h"
 
@@ -199,6 +200,67 @@ std::unique_ptr<Function> Parser::parseFunctionDeclaration() {
 // =============================================================================
 std::unique_ptr<Function> Parser::parseDeclaration() {
     return parseFunctionDeclaration();
+}
+
+// =============================================================================
+// Parser::parseVarDecl() — Day 37
+// =============================================================================
+//
+// Grammar:
+//   variable-declaration:
+//       type-specifier identifier ( '=' expression )? ';'
+//
+std::unique_ptr<VarDecl> Parser::parseVarDecl() {
+    if (isAtEnd()) {
+        return nullptr;
+    }
+
+    if (!isPrimitiveTypeToken(peek())) {
+        error("Expected type specifier");
+        return nullptr;
+    }
+
+    Token typeTok = advance();
+    auto type = primitiveTypeFromToken(typeTok);
+    SourceLocation loc{typeTok.line, typeTok.column};
+
+    if (isAtEnd() || peek().type != TokenType::Identifier) {
+        error("Expected identifier after type specifier");
+        return nullptr;
+    }
+
+    Token nameTok = advance();
+    std::string name = nameTok.lexeme;
+
+    std::unique_ptr<Expression> initializer = nullptr;
+    if (!isAtEnd() && check(TokenType::Operator) && peek().lexeme == "=") {
+        advance(); // consume '='
+
+        if (isAtEnd() || (check(TokenType::Punctuation) && peek().lexeme == ";")) {
+            error("Expected expression after '='");
+            return nullptr;
+        }
+
+        initializer = parseExpression();
+        if (!initializer) {
+            if (!hasError()) {
+                error("Expected expression after '='");
+            }
+            return nullptr;
+        }
+    }
+
+    if (isAtEnd() || !check(TokenType::Punctuation) || peek().lexeme != ";") {
+        error("Expected ';' after variable declaration");
+        return nullptr;
+    }
+    advance(); // consume ';'
+
+    return std::make_unique<VarDecl>(std::move(type), std::move(name), std::move(initializer), loc);
+}
+
+std::unique_ptr<VarDecl> Parser::parseVariableDeclaration() {
+    return parseVarDecl();
 }
 
 // =============================================================================

@@ -14,6 +14,7 @@
 #include "ast/program.h"
 #include "ast/function.h"
 #include "ast/variable_declaration.h"
+#include "ast/var_decl.h"
 #include "ast/decl.h"
 #include "ast/literal_expression.h"
 #include "ast/identifier_expression.h"
