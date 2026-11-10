@@ -203,13 +203,11 @@ std::unique_ptr<Function> Parser::parseDeclaration() {
 }
 
 // =============================================================================
-// Parser::parseVarDecl() — Day 37
 // Parser::parseVarDecl() — Day 37 & Day 38
 // =============================================================================
 //
 // Grammar:
 //   variable-declaration:
-//       type-specifier identifier ( '=' expression )? ';'
 //       'const'? type-specifier 'const'? identifier ( '=' expression )? ';'
 //
 std::unique_ptr<VarDecl> Parser::parseVarDecl() {
@@ -217,8 +215,6 @@ std::unique_ptr<VarDecl> Parser::parseVarDecl() {
         return nullptr;
     }
 
-    if (!isPrimitiveTypeToken(peek())) {
-        error("Expected type specifier");
     bool isConst = false;
     SourceLocation loc;
     bool hasLoc = false;
@@ -243,8 +239,6 @@ std::unique_ptr<VarDecl> Parser::parseVarDecl() {
     }
 
     Token typeTok = advance();
-    auto type = primitiveTypeFromToken(typeTok);
-    SourceLocation loc{typeTok.line, typeTok.column};
     if (!hasLoc) {
         loc = {typeTok.line, typeTok.column};
         hasLoc = true;

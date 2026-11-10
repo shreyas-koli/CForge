@@ -36,12 +36,10 @@ enum class TypeKind {
 //
 // Abstract representation of a C type. Provides common kind and category
 // queries, stringification, structural equality, and canonical factory
-// methods for primitive types.
 // methods for primitive types. Supports type qualifiers (const).
 //
 class Type {
 public:
-    explicit Type(TypeKind kind);
     explicit Type(TypeKind kind, bool isConst = false);
     virtual ~Type() = default;
 
@@ -68,7 +66,6 @@ public:
     // Standard size in bytes (target-dependent default)
     virtual std::size_t size() const;
 
-    // Display name / stringification (e.g. "int", "char", "void")
     // Display name / stringification (e.g. "int", "char", "void", "const int")
     virtual std::string toString() const;
     virtual const char* name() const;
@@ -80,11 +77,6 @@ public:
     bool operator!=(const Type& other) const { return !equals(other); }
 
     // Canonical primitive type instances (Flyweight / singleton pattern)
-    static std::shared_ptr<Type> getVoid();
-    static std::shared_ptr<Type> getChar();
-    static std::shared_ptr<Type> getInt();
-    static std::shared_ptr<Type> getFloat();
-    static std::shared_ptr<Type> getDouble();
     static std::shared_ptr<Type> getVoid(bool isConst = false);
     static std::shared_ptr<Type> getChar(bool isConst = false);
     static std::shared_ptr<Type> getInt(bool isConst = false);
@@ -92,9 +84,6 @@ public:
     static std::shared_ptr<Type> getDouble(bool isConst = false);
 
     // Factory by TypeKind or keyword/token
-    static std::shared_ptr<Type> getPrimitive(TypeKind kind);
-    static std::shared_ptr<Type> fromKeyword(const std::string& keyword);
-    static std::shared_ptr<Type> fromToken(const Token& token);
     static std::shared_ptr<Type> getPrimitive(TypeKind kind, bool isConst = false);
     static std::shared_ptr<Type> fromKeyword(const std::string& keyword, bool isConst = false);
     static std::shared_ptr<Type> fromToken(const Token& token, bool isConst = false);
@@ -113,7 +102,6 @@ private:
 // =============================================================================
 class PrimitiveType : public Type {
 public:
-    explicit PrimitiveType(TypeKind kind);
     explicit PrimitiveType(TypeKind kind, bool isConst = false);
     ~PrimitiveType() override = default;
 
@@ -149,10 +137,6 @@ TypeKind typeKindFromKeyword(const std::string& name);
 TypeKind typeKindFromToken(const Token& token);
 
 // Factory helpers returning canonical shared_ptr<Type>, or nullptr if not primitive
-std::shared_ptr<Type> getPrimitiveType(TypeKind kind);
-std::shared_ptr<Type> getPrimitiveType(const std::string& keyword);
-std::shared_ptr<Type> primitiveTypeFromKeyword(const std::string& name);
-std::shared_ptr<Type> primitiveTypeFromToken(const Token& token);
 std::shared_ptr<Type> getPrimitiveType(TypeKind kind, bool isConst = false);
 std::shared_ptr<Type> getPrimitiveType(const std::string& keyword, bool isConst = false);
 std::shared_ptr<Type> primitiveTypeFromKeyword(const std::string& name, bool isConst = false);
