@@ -80,6 +80,7 @@ TokenType lookupKeyword(const std::string& text) {
         {"break",    TokenType::Keyword},
         {"continue", TokenType::Keyword},
         {"return",   TokenType::Keyword},
+        {"const",    TokenType::Keyword},
     };
 
     auto it = keywords.find(text);

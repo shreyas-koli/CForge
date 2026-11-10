@@ -31,6 +31,7 @@ public:
     const std::shared_ptr<Type>& typeShared() const { return m_type; }
     const std::shared_ptr<Type>& getType() const { return m_type; }
     TypeKind typeKind() const { return m_type ? m_type->kind() : TypeKind::Unknown; }
+    bool isConst() const { return m_type && m_type->isConst(); }
 
     // Identifier name accessors
     const std::string& name() const { return m_name; }

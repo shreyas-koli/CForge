@@ -37,14 +37,19 @@ enum class TypeKind {
 // Abstract representation of a C type. Provides common kind and category
 // queries, stringification, structural equality, and canonical factory
 // methods for primitive types.
+// methods for primitive types. Supports type qualifiers (const).
 //
 class Type {
 public:
     explicit Type(TypeKind kind);
+    explicit Type(TypeKind kind, bool isConst = false);
     virtual ~Type() = default;
 
     TypeKind kind() const { return m_kind; }
     TypeKind getKind() const { return m_kind; }
+
+    // Qualifier queries (Day 38)
+    bool isConst() const { return m_isConst; }
 
     // Kind queries
     bool isVoid() const { return m_kind == TypeKind::Void; }
@@ -64,6 +69,7 @@ public:
     virtual std::size_t size() const;
 
     // Display name / stringification (e.g. "int", "char", "void")
+    // Display name / stringification (e.g. "int", "char", "void", "const int")
     virtual std::string toString() const;
     virtual const char* name() const;
 
@@ -79,14 +85,27 @@ public:
     static std::shared_ptr<Type> getInt();
     static std::shared_ptr<Type> getFloat();
     static std::shared_ptr<Type> getDouble();
+    static std::shared_ptr<Type> getVoid(bool isConst = false);
+    static std::shared_ptr<Type> getChar(bool isConst = false);
+    static std::shared_ptr<Type> getInt(bool isConst = false);
+    static std::shared_ptr<Type> getFloat(bool isConst = false);
+    static std::shared_ptr<Type> getDouble(bool isConst = false);
 
     // Factory by TypeKind or keyword/token
     static std::shared_ptr<Type> getPrimitive(TypeKind kind);
     static std::shared_ptr<Type> fromKeyword(const std::string& keyword);
     static std::shared_ptr<Type> fromToken(const Token& token);
+    static std::shared_ptr<Type> getPrimitive(TypeKind kind, bool isConst = false);
+    static std::shared_ptr<Type> fromKeyword(const std::string& keyword, bool isConst = false);
+    static std::shared_ptr<Type> fromToken(const Token& token, bool isConst = false);
+
+    // Qualifier transformation helpers
+    virtual std::shared_ptr<Type> withConst(bool isConst = true) const;
+    std::shared_ptr<Type> asConst() const { return withConst(true); }
 
 private:
     TypeKind m_kind;
+    bool m_isConst{false};
 };
 
 // =============================================================================
@@ -95,6 +114,7 @@ private:
 class PrimitiveType : public Type {
 public:
     explicit PrimitiveType(TypeKind kind);
+    explicit PrimitiveType(TypeKind kind, bool isConst = false);
     ~PrimitiveType() override = default;
 
     bool isPrimitive() const override { return true; }
@@ -102,6 +122,7 @@ public:
     std::string toString() const override;
     const char* name() const override;
     bool equals(const Type& other) const override;
+    std::shared_ptr<Type> withConst(bool isConst = true) const override;
 };
 
 // =============================================================================
@@ -132,3 +153,7 @@ std::shared_ptr<Type> getPrimitiveType(TypeKind kind);
 std::shared_ptr<Type> getPrimitiveType(const std::string& keyword);
 std::shared_ptr<Type> primitiveTypeFromKeyword(const std::string& name);
 std::shared_ptr<Type> primitiveTypeFromToken(const Token& token);
+std::shared_ptr<Type> getPrimitiveType(TypeKind kind, bool isConst = false);
+std::shared_ptr<Type> getPrimitiveType(const std::string& keyword, bool isConst = false);
+std::shared_ptr<Type> primitiveTypeFromKeyword(const std::string& name, bool isConst = false);
+std::shared_ptr<Type> primitiveTypeFromToken(const Token& token, bool isConst = false);

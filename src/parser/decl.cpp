@@ -204,11 +204,13 @@ std::unique_ptr<Function> Parser::parseDeclaration() {
 
 // =============================================================================
 // Parser::parseVarDecl() — Day 37
+// Parser::parseVarDecl() — Day 37 & Day 38
 // =============================================================================
 //
 // Grammar:
 //   variable-declaration:
 //       type-specifier identifier ( '=' expression )? ';'
+//       'const'? type-specifier 'const'? identifier ( '=' expression )? ';'
 //
 std::unique_ptr<VarDecl> Parser::parseVarDecl() {
     if (isAtEnd()) {
@@ -217,12 +219,44 @@ std::unique_ptr<VarDecl> Parser::parseVarDecl() {
 
     if (!isPrimitiveTypeToken(peek())) {
         error("Expected type specifier");
+    bool isConst = false;
+    SourceLocation loc;
+    bool hasLoc = false;
+
+    // Check for leading 'const' qualifier (Day 38)
+    while (!isAtEnd() && check(TokenType::Keyword) && peek().lexeme == "const") {
+        Token constTok = advance();
+        if (!hasLoc) {
+            loc = {constTok.line, constTok.column};
+            hasLoc = true;
+        }
+        isConst = true;
+    }
+
+    if (isAtEnd() || !isPrimitiveTypeToken(peek())) {
+        if (isConst) {
+            error("Expected type specifier after 'const'");
+        } else {
+            error("Expected type specifier");
+        }
         return nullptr;
     }
 
     Token typeTok = advance();
     auto type = primitiveTypeFromToken(typeTok);
     SourceLocation loc{typeTok.line, typeTok.column};
+    if (!hasLoc) {
+        loc = {typeTok.line, typeTok.column};
+        hasLoc = true;
+    }
+
+    // Support trailing 'const' qualifier (e.g. 'int const x;')
+    while (!isAtEnd() && check(TokenType::Keyword) && peek().lexeme == "const") {
+        advance();
+        isConst = true;
+    }
+
+    auto type = getPrimitiveType(typeKindFromToken(typeTok), isConst);
 
     if (isAtEnd() || peek().type != TokenType::Identifier) {
         error("Expected identifier after type specifier");

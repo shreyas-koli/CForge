@@ -97,6 +97,7 @@ add_executable(cforge_tests
     tests/parser/control_flow/test_control_flow_integration.cpp
     tests/types/test_primitive_types.cpp
     tests/parser/test_variable_declaration.cpp
+    tests/parser/test_const_qualifier.cpp
     src/driver/pipeline.cpp
     src/lexer/token.cpp
     src/lexer/lexer.cpp
