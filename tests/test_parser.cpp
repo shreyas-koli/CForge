@@ -2429,13 +2429,13 @@ TEST_CASE("parseDeclaration error: missing parameter type", "[parser][decl][erro
     CHECK(parser.errorMessage() == "Expected parameter type before 'a'");
 }
 
-TEST_CASE("parseDeclaration error: missing parameter name", "[parser][decl][error]") {
-    Parser parser = makeParser("int foo(int);");
+TEST_CASE("parseDeclaration error: missing parameter name in function definition", "[parser][decl][error]") {
+    Parser parser = makeParser("int foo(int) { return 0; }");
     auto fn = parser.parseDeclaration();
 
     CHECK(fn == nullptr);
     CHECK(parser.hasError());
-    CHECK(parser.errorMessage() == "Expected parameter name after 'int'");
+    CHECK(parser.errorMessage() == "Function definition requires parameter names");
 }
 
 TEST_CASE("parseDeclaration error: trailing comma in parameter list", "[parser][decl][error]") {

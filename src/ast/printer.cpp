@@ -119,8 +119,11 @@ void ASTPrinter::printFunction(std::ostream& out, const Function* fn, int level)
 }
 
 void ASTPrinter::printVariableDeclaration(std::ostream& out, const VariableDeclaration* var, int level) const {
-    out << makeIndent(level) << "VariableDeclaration: "
-        << var->type() << " " << var->name() << "\n";
+    out << makeIndent(level) << "VariableDeclaration: " << var->type();
+    if (!var->name().empty()) {
+        out << " " << var->name();
+    }
+    out << "\n";
     if (var->hasInitializer()) {
         out << makeIndent(level + 1) << "Initializer:\n";
         printNode(out, var->initializer(), level + 2);

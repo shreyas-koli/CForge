@@ -66,18 +66,22 @@ std::unique_ptr<Function> Parser::parseFunctionDeclaration() {
     advance();
 
     // Parse parameter list
-    // Case 1: Empty parameter list '()'
+    // Case 1: Empty parameter list '()' — C17 unspecified parameters
     if (check(TokenType::Punctuation) && peek().lexeme == ")") {
         advance(); // consume ')'
+        function->setParameterListKind(ParameterListKind::Unspecified);
     }
-    // Case 2: Explicit '(void)' no-parameter list
+    // Case 2: Explicit '(void)' no-parameter list — C17 explicit zero parameters
     else if (check(TokenType::Keyword) && peek().lexeme == "void" &&
              peekNext().type == TokenType::Punctuation && peekNext().lexeme == ")") {
         advance(); // consume 'void'
         advance(); // consume ')'
+        function->setParameterListKind(ParameterListKind::Void);
     }
     // Case 3: Parameter declarations
     else {
+        function->setParameterListKind(ParameterListKind::Typed);
+
         // Disallow 'void' with comma or as named parameter (e.g. 'void, ...' or 'void x')
         if (check(TokenType::Keyword) && peek().lexeme == "void") {
             advance(); // consume 'void'
@@ -95,34 +99,63 @@ std::unique_ptr<Function> Parser::parseFunctionDeclaration() {
                 return nullptr;
             }
 
+            bool isConst = false;
+            SourceLocation paramLoc;
+            bool hasParamLoc = false;
+
+            // Check for leading 'const' qualifier (Day 38 & Day 40)
+            while (!isAtEnd() && check(TokenType::Keyword) && peek().lexeme == "const") {
+                Token constTok = advance();
+                if (!hasParamLoc) {
+                    paramLoc = {constTok.line, constTok.column};
+                    hasParamLoc = true;
+                }
+                isConst = true;
+            }
+
             // Parameter type
-            if (!isTypeSpecifier(peek())) {
-                if (peek().type == TokenType::Identifier) {
+            if (isAtEnd() || !isTypeSpecifier(peek())) {
+                if (isConst) {
+                    error("Expected type specifier after 'const'");
+                } else if (!isAtEnd() && peek().type == TokenType::Identifier) {
                     error("Expected parameter type before '" + peek().lexeme + "'");
                 } else {
                     error("Expected parameter type");
                 }
                 return nullptr;
             }
-            Token paramTypeTok = advance();
-            std::string paramType = paramTypeTok.lexeme;
-            SourceLocation paramLoc{paramTypeTok.line, paramTypeTok.column};
 
-            if (paramType == "void") {
+            Token paramTypeTok = advance();
+            if (!hasParamLoc) {
+                paramLoc = {paramTypeTok.line, paramTypeTok.column};
+                hasParamLoc = true;
+            }
+
+            Token lastSpecifierTok = paramTypeTok;
+
+            // Support trailing 'const' qualifier (e.g. 'int const x' or 'int const')
+            while (!isAtEnd() && check(TokenType::Keyword) && peek().lexeme == "const") {
+                lastSpecifierTok = advance();
+                isConst = true;
+            }
+
+            TypeKind kind = typeKindFromToken(paramTypeTok);
+            if (kind == TypeKind::Void) {
                 error("Parameter cannot have 'void' type");
                 return nullptr;
             }
 
-            // Parameter name
-            if (isAtEnd() || peek().type != TokenType::Identifier) {
-                error("Expected parameter name after '" + paramType + "'");
-                return nullptr;
+            auto typeObj = getPrimitiveType(kind, isConst);
+
+            // Parameter name: optional in prototypes, required in definitions
+            std::string paramName;
+            if (!isAtEnd() && peek().type == TokenType::Identifier) {
+                Token paramNameTok = advance();
+                paramName = paramNameTok.lexeme;
             }
-            Token paramNameTok = advance();
-            std::string paramName = paramNameTok.lexeme;
 
             auto param = std::make_unique<VariableDeclaration>(
-                std::move(paramName), std::move(paramType), nullptr, paramLoc);
+                std::move(typeObj), std::move(paramName), nullptr, paramLoc);
             function->addParameter(std::move(param));
 
             if (isAtEnd()) {
@@ -160,6 +193,15 @@ std::unique_ptr<Function> Parser::parseFunctionDeclaration() {
     }
 
     if (peek().type == TokenType::Punctuation && peek().lexeme == "{") {
+        // Function definitions require named parameters
+        for (std::size_t i = 0; i < function->parameterCount(); ++i) {
+            const auto* param = function->parameter(i);
+            if (param && !param->hasName()) {
+                error("Function definition requires parameter names");
+                return nullptr;
+            }
+        }
+
         function->setIsDefinition(true);
         advance(); // consume opening '{'
 

@@ -100,6 +100,7 @@ add_executable(cforge_tests
     tests/types/test_conversions.cpp
     tests/parser/test_variable_declaration.cpp
     tests/parser/test_const_qualifier.cpp
+    tests/parser/test_function_parameter_types.cpp
     src/driver/pipeline.cpp
     src/lexer/token.cpp
     src/lexer/lexer.cpp

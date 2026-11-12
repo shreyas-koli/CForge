@@ -336,12 +336,12 @@ TEST_CASE("Phase 2 Negative: function declaration and definition syntax errors",
         CHECK(parser.errorMessage() == "Expected ',' or ')' after parameter declaration");
     }
 
-    SECTION("missing parameter name: 'int f(int, float b);'") {
-        Parser parser = makeParser("int f(int, float b);");
+    SECTION("missing parameter name in function definition: 'int f(int, float b) { return 0; }'") {
+        Parser parser = makeParser("int f(int, float b) { return 0; }");
         auto decl = parser.parseDeclaration();
         CHECK(decl == nullptr);
         CHECK(parser.hasError());
-        CHECK(parser.errorMessage() == "Expected parameter name after 'int'");
+        CHECK(parser.errorMessage() == "Function definition requires parameter names");
     }
 
     SECTION("missing parameter type: 'int f(a);'") {
