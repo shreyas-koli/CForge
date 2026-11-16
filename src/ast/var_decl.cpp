@@ -4,11 +4,13 @@
 VarDecl::VarDecl(std::shared_ptr<Type> type,
                  std::string name,
                  std::unique_ptr<Expression> initializer,
-                 SourceLocation loc)
+                 SourceLocation loc,
+                 StorageClass storageClass)
     : Statement(loc)
     , m_type(std::move(type))
     , m_name(std::move(name))
-    , m_initializer(std::move(initializer)) {
+    , m_initializer(std::move(initializer))
+    , m_storageClass(storageClass) {
 }
 
 VarDecl::~VarDecl() = default;
@@ -23,7 +25,11 @@ void VarDecl::setInitializer(std::unique_ptr<Expression> initializer) {
 
 std::string VarDecl::toString() const {
     std::string typeStr = m_type ? m_type->toString() : "<unknown>";
-    std::string str = "VarDecl: " + typeStr + " " + m_name;
+    std::string prefix;
+    if (m_storageClass != StorageClass::None) {
+        prefix = std::string(storageClassToString(m_storageClass)) + " ";
+    }
+    std::string str = "VarDecl: " + prefix + typeStr + " " + m_name;
     if (m_initializer) {
         str += " = " + m_initializer->toString();
     }

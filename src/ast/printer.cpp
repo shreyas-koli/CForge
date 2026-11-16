@@ -92,8 +92,13 @@ void ASTPrinter::printProgram(std::ostream& out, const Program* prog, int level)
 
 void ASTPrinter::printFunction(std::ostream& out, const Function* fn, int level) const {
     std::string kindStr = fn->isDefinition() ? "definition" : "prototype";
+    std::string retStr = fn->returnTypePtr() ? fn->returnTypePtr()->toString() : fn->returnTypeName();
+    std::string scPrefix;
+    if (fn->storageClass() != StorageClass::None) {
+        scPrefix = std::string(storageClassToString(fn->storageClass())) + " ";
+    }
     out << makeIndent(level) << "Function (" << kindStr << "): "
-        << fn->returnType() << " " << fn->name() << "\n";
+        << scPrefix << retStr << " " << fn->name() << "\n";
 
     // Parameters
     if (fn->parameters().empty()) {
@@ -119,7 +124,11 @@ void ASTPrinter::printFunction(std::ostream& out, const Function* fn, int level)
 }
 
 void ASTPrinter::printVariableDeclaration(std::ostream& out, const VariableDeclaration* var, int level) const {
-    out << makeIndent(level) << "VariableDeclaration: " << var->type();
+    std::string scPrefix;
+    if (var->storageClass() != StorageClass::None) {
+        scPrefix = std::string(storageClassToString(var->storageClass())) + " ";
+    }
+    out << makeIndent(level) << "VariableDeclaration: " << scPrefix << var->type();
     if (!var->name().empty()) {
         out << " " << var->name();
     }
@@ -131,8 +140,12 @@ void ASTPrinter::printVariableDeclaration(std::ostream& out, const VariableDecla
 }
 
 void ASTPrinter::printVarDecl(std::ostream& out, const VarDecl* var, int level) const {
+    std::string scPrefix;
+    if (var->storageClass() != StorageClass::None) {
+        scPrefix = std::string(storageClassToString(var->storageClass())) + " ";
+    }
     out << makeIndent(level) << "VarDecl: "
-        << (var->type() ? var->type()->toString() : "<unknown>") << " " << var->name() << "\n";
+        << scPrefix << (var->type() ? var->type()->toString() : "<unknown>") << " " << var->name() << "\n";
     if (var->hasInitializer()) {
         out << makeIndent(level + 1) << "Initializer:\n";
         printNode(out, var->initializer(), level + 2);

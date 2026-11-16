@@ -2,6 +2,7 @@
 
 #include "ast/statement.h"
 #include "ast/expression.h"
+#include "ast/storage_class.h"
 #include "types/type.h"
 
 #include <memory>
@@ -87,17 +88,19 @@ public:
                          std::unique_ptr<Expression> initializer = nullptr,
                          SourceLocation loc = {});
 
-    // Modern / Type-based constructor (Day 40)
+    // Modern / Type-based constructor (Day 40 & Day 42)
     VariableDeclaration(std::shared_ptr<Type> type,
                          std::string name,
                          std::unique_ptr<Expression> initializer = nullptr,
-                         SourceLocation loc = {});
+                         SourceLocation loc = {},
+                         StorageClass storageClass = StorageClass::None);
 
     // Convenience constructor (name, shared_ptr<Type>)
     VariableDeclaration(std::string name,
                          std::shared_ptr<Type> type,
                          std::unique_ptr<Expression> initializer = nullptr,
-                         SourceLocation loc = {});
+                         SourceLocation loc = {},
+                         StorageClass storageClass = StorageClass::None);
 
     ~VariableDeclaration() override;
 
@@ -118,6 +121,13 @@ public:
     const std::shared_ptr<Type>& getTypeShared() const { return m_type; }
     TypeKind typeKind() const { return m_type ? m_type->kind() : TypeKind::Unknown; }
     bool isConst() const { return m_type && m_type->isConst(); }
+    bool isVolatile() const { return m_type && m_type->isVolatile(); }
+
+    // Storage class accessors (Day 42)
+    StorageClass storageClass() const { return m_storageClass; }
+    StorageClass getStorageClass() const { return m_storageClass; }
+    bool isRegister() const { return m_storageClass == StorageClass::Register; }
+    void setStorageClass(StorageClass sc) { m_storageClass = sc; }
 
     // Initializer expression accessors
     bool hasInitializer() const { return m_initializer != nullptr; }
@@ -135,4 +145,5 @@ private:
     std::string m_typeName;
     std::string m_name;
     std::unique_ptr<Expression> m_initializer;
+    StorageClass m_storageClass{StorageClass::None};
 };

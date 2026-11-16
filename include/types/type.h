@@ -40,14 +40,16 @@ enum class TypeKind {
 //
 class Type {
 public:
-    explicit Type(TypeKind kind, bool isConst = false);
+    explicit Type(TypeKind kind, bool isConst = false, bool isVolatile = false);
     virtual ~Type() = default;
 
     TypeKind kind() const { return m_kind; }
     TypeKind getKind() const { return m_kind; }
 
-    // Qualifier queries (Day 38)
+    // Qualifier queries (Day 38 & Day 42)
     bool isConst() const { return m_isConst; }
+    bool isVolatile() const { return m_isVolatile; }
+    bool isQualified() const { return m_isConst || m_isVolatile; }
 
     // Kind queries
     bool isVoid() const { return m_kind == TypeKind::Void; }
@@ -77,24 +79,27 @@ public:
     bool operator!=(const Type& other) const { return !equals(other); }
 
     // Canonical primitive type instances (Flyweight / singleton pattern)
-    static std::shared_ptr<Type> getVoid(bool isConst = false);
-    static std::shared_ptr<Type> getChar(bool isConst = false);
-    static std::shared_ptr<Type> getInt(bool isConst = false);
-    static std::shared_ptr<Type> getFloat(bool isConst = false);
-    static std::shared_ptr<Type> getDouble(bool isConst = false);
+    static std::shared_ptr<Type> getVoid(bool isConst = false, bool isVolatile = false);
+    static std::shared_ptr<Type> getChar(bool isConst = false, bool isVolatile = false);
+    static std::shared_ptr<Type> getInt(bool isConst = false, bool isVolatile = false);
+    static std::shared_ptr<Type> getFloat(bool isConst = false, bool isVolatile = false);
+    static std::shared_ptr<Type> getDouble(bool isConst = false, bool isVolatile = false);
 
     // Factory by TypeKind or keyword/token
-    static std::shared_ptr<Type> getPrimitive(TypeKind kind, bool isConst = false);
-    static std::shared_ptr<Type> fromKeyword(const std::string& keyword, bool isConst = false);
-    static std::shared_ptr<Type> fromToken(const Token& token, bool isConst = false);
+    static std::shared_ptr<Type> getPrimitive(TypeKind kind, bool isConst = false, bool isVolatile = false);
+    static std::shared_ptr<Type> fromKeyword(const std::string& keyword, bool isConst = false, bool isVolatile = false);
+    static std::shared_ptr<Type> fromToken(const Token& token, bool isConst = false, bool isVolatile = false);
 
     // Qualifier transformation helpers
     virtual std::shared_ptr<Type> withConst(bool isConst = true) const;
+    virtual std::shared_ptr<Type> withVolatile(bool isVolatile = true) const;
     std::shared_ptr<Type> asConst() const { return withConst(true); }
+    std::shared_ptr<Type> asVolatile() const { return withVolatile(true); }
 
 private:
     TypeKind m_kind;
     bool m_isConst{false};
+    bool m_isVolatile{false};
 };
 
 // =============================================================================
@@ -102,7 +107,7 @@ private:
 // =============================================================================
 class PrimitiveType : public Type {
 public:
-    explicit PrimitiveType(TypeKind kind, bool isConst = false);
+    explicit PrimitiveType(TypeKind kind, bool isConst = false, bool isVolatile = false);
     ~PrimitiveType() override = default;
 
     bool isPrimitive() const override { return true; }
@@ -111,6 +116,7 @@ public:
     const char* name() const override;
     bool equals(const Type& other) const override;
     std::shared_ptr<Type> withConst(bool isConst = true) const override;
+    std::shared_ptr<Type> withVolatile(bool isVolatile = true) const override;
 };
 
 // =============================================================================
@@ -137,7 +143,7 @@ TypeKind typeKindFromKeyword(const std::string& name);
 TypeKind typeKindFromToken(const Token& token);
 
 // Factory helpers returning canonical shared_ptr<Type>, or nullptr if not primitive
-std::shared_ptr<Type> getPrimitiveType(TypeKind kind, bool isConst = false);
-std::shared_ptr<Type> getPrimitiveType(const std::string& keyword, bool isConst = false);
-std::shared_ptr<Type> primitiveTypeFromKeyword(const std::string& name, bool isConst = false);
-std::shared_ptr<Type> primitiveTypeFromToken(const Token& token, bool isConst = false);
+std::shared_ptr<Type> getPrimitiveType(TypeKind kind, bool isConst = false, bool isVolatile = false);
+std::shared_ptr<Type> getPrimitiveType(const std::string& keyword, bool isConst = false, bool isVolatile = false);
+std::shared_ptr<Type> primitiveTypeFromKeyword(const std::string& name, bool isConst = false, bool isVolatile = false);
+std::shared_ptr<Type> primitiveTypeFromToken(const Token& token, bool isConst = false, bool isVolatile = false);

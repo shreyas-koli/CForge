@@ -18,22 +18,26 @@ VariableDeclaration::VariableDeclaration(std::string name,
 VariableDeclaration::VariableDeclaration(std::shared_ptr<Type> type,
                                          std::string name,
                                          std::unique_ptr<Expression> initializer,
-                                         SourceLocation loc)
+                                         SourceLocation loc,
+                                         StorageClass storageClass)
     : Statement(loc)
     , m_type(std::move(type))
     , m_typeName(m_type ? m_type->toString() : "")
     , m_name(std::move(name))
-    , m_initializer(std::move(initializer)) {}
+    , m_initializer(std::move(initializer))
+    , m_storageClass(storageClass) {}
 
 VariableDeclaration::VariableDeclaration(std::string name,
                                          std::shared_ptr<Type> type,
                                          std::unique_ptr<Expression> initializer,
-                                         SourceLocation loc)
+                                         SourceLocation loc,
+                                         StorageClass storageClass)
     : Statement(loc)
     , m_type(std::move(type))
     , m_typeName(m_type ? m_type->toString() : "")
     , m_name(std::move(name))
-    , m_initializer(std::move(initializer)) {}
+    , m_initializer(std::move(initializer))
+    , m_storageClass(storageClass) {}
 
 VariableDeclaration::~VariableDeclaration() = default;
 
@@ -46,7 +50,11 @@ void VariableDeclaration::setInitializer(std::unique_ptr<Expression> initializer
 }
 
 std::string VariableDeclaration::toString() const {
-    std::string str = "VariableDeclaration: " + m_typeName;
+    std::string prefix;
+    if (m_storageClass == StorageClass::Register) {
+        prefix = "register ";
+    }
+    std::string str = "VariableDeclaration: " + prefix + m_typeName;
     if (!m_name.empty()) {
         str += " " + m_name;
     }

@@ -3,14 +3,146 @@
 #include "ast/variable_declaration.h"
 #include "ast/var_decl.h"
 #include "ast/program.h"
+#include "ast/storage_class.h"
 #include "types/type.h"
 
 // =============================================================================
-// Helper Functions for Declaration Parsing (Day 18 & Day 36)
+// Helper Functions for Declaration Parsing (Day 18, 36, 38, 42)
 // =============================================================================
 
 static bool isTypeSpecifier(const Token& tok) {
     return isPrimitiveTypeToken(tok);
+}
+
+static bool isStorageClassSpecifier(const Token& tok) {
+    if (tok.type != TokenType::Keyword) return false;
+    return tok.lexeme == "static" || tok.lexeme == "extern" || tok.lexeme == "register";
+}
+
+static bool isTypeQualifier(const Token& tok) {
+    if (tok.type != TokenType::Keyword) return false;
+    return tok.lexeme == "const" || tok.lexeme == "volatile";
+}
+
+static bool isDeclarationSpecifier(const Token& tok) {
+    return isTypeSpecifier(tok) || isTypeQualifier(tok) || isStorageClassSpecifier(tok);
+}
+
+struct DeclSpecifiers {
+    StorageClass storageClass{StorageClass::None};
+    std::string storageClassToken;
+    bool isConst{false};
+    bool isVolatile{false};
+    TypeKind typeKind{TypeKind::Unknown};
+    SourceLocation loc;
+    bool hasLoc{false};
+    bool hasType{false};
+    Token lastSpecifierTok;
+};
+
+static bool parseDeclarationSpecifiers(Parser& parser, DeclSpecifiers& specs,
+                                       bool allowStorageClass = true,
+                                       bool allowRegisterOnly = false) {
+    while (!parser.isAtEnd()) {
+        const Token& tok = parser.peek();
+        if (tok.type != TokenType::Keyword) {
+            break;
+        }
+
+        // 1. Storage-class specifiers (Day 42)
+        if (tok.lexeme == "static" || tok.lexeme == "extern" || tok.lexeme == "register") {
+            if (!allowStorageClass) {
+                parser.error("Storage class specifier not allowed here");
+                return false;
+            }
+            if (allowRegisterOnly && tok.lexeme != "register") {
+                parser.error("Parameter cannot have '" + tok.lexeme + "' storage class");
+                return false;
+            }
+
+            StorageClass sc = StorageClass::None;
+            if (tok.lexeme == "static") sc = StorageClass::Static;
+            else if (tok.lexeme == "extern") sc = StorageClass::Extern;
+            else if (tok.lexeme == "register") sc = StorageClass::Register;
+
+            if (specs.storageClass != StorageClass::None) {
+                if (specs.storageClass == sc) {
+                    parser.error("Duplicate storage class specifier '" + tok.lexeme + "'");
+                } else {
+                    parser.error("Multiple storage class specifiers in declaration");
+                }
+                return false;
+            }
+
+            Token scTok = parser.advance();
+            if (!specs.hasLoc) {
+                specs.loc = {scTok.line, scTok.column};
+                specs.hasLoc = true;
+            }
+            specs.storageClass = sc;
+            specs.storageClassToken = scTok.lexeme;
+            specs.lastSpecifierTok = scTok;
+            continue;
+        }
+
+        // 2. Type qualifiers (Day 38 const, Day 42 volatile)
+        if (tok.lexeme == "const") {
+            Token constTok = parser.advance();
+            if (!specs.hasLoc) {
+                specs.loc = {constTok.line, constTok.column};
+                specs.hasLoc = true;
+            }
+            specs.isConst = true;
+            specs.lastSpecifierTok = constTok;
+            continue;
+        }
+
+        if (tok.lexeme == "volatile") {
+            Token volTok = parser.advance();
+            if (!specs.hasLoc) {
+                specs.loc = {volTok.line, volTok.column};
+                specs.hasLoc = true;
+            }
+            specs.isVolatile = true;
+            specs.lastSpecifierTok = volTok;
+            continue;
+        }
+
+        // 3. Type specifier
+        if (isPrimitiveTypeToken(tok)) {
+            if (specs.hasType) {
+                parser.error("Cannot combine with previous type specifier '" + typeKindToString(specs.typeKind) + "'");
+                return false;
+            }
+            Token typeTok = parser.advance();
+            if (!specs.hasLoc) {
+                specs.loc = {typeTok.line, typeTok.column};
+                specs.hasLoc = true;
+            }
+            specs.hasType = true;
+            specs.typeKind = typeKindFromToken(typeTok);
+            specs.lastSpecifierTok = typeTok;
+            continue;
+        }
+
+        // Other keywords (if, while, return, etc.) break declaration specifiers
+        break;
+    }
+
+    if (!specs.hasType) {
+        if (specs.isConst) {
+            parser.error("Expected type specifier after 'const'");
+        } else if (specs.isVolatile) {
+            parser.error("Expected type specifier after 'volatile'");
+        } else if (specs.storageClass != StorageClass::None) {
+            parser.error("Expected type specifier after '" + specs.storageClassToken + "'");
+        } else {
+            parser.error("Expected type specifier");
+        }
+        return false;
+    }
+
+    return true;
 }
 
 // =============================================================================
@@ -19,48 +151,76 @@ static bool isTypeSpecifier(const Token& tok) {
 //
 // Grammar:
 //   function-declaration:
-//       type-specifier identifier '(' parameter-list? ')' ';'
-//       type-specifier identifier '(' parameter-list? ')' '{' ... '}'
+//       storage-class-specifier? type-qualifier* type-specifier identifier '(' parameter-list? ')' ';'
+//       storage-class-specifier? type-qualifier* type-specifier identifier '(' parameter-list? ')' '{' ... '}'
 //
 //   parameter-list:
 //       'void'
 //       parameter ( ',' parameter )*
 //
 //   parameter:
-//       type-specifier identifier
+//       'register'? type-qualifier* type-specifier identifier?
 //
 std::unique_ptr<Function> Parser::parseFunctionDeclaration() {
     if (isAtEnd()) {
         return nullptr;
     }
 
-    if (!isTypeSpecifier(peek())) {
+    if (!isDeclarationSpecifier(peek())) {
         return nullptr;
     }
 
-    // Check if next token is an identifier
-    if (peekAt(1).type != TokenType::Identifier) {
-        Token typeTok = advance();
-        error("Expected identifier after '" + typeTok.lexeme + "'");
+    // Lookahead scan: count declaration specifier tokens to find the identifier and '('
+    std::size_t offset = 0;
+    while (isDeclarationSpecifier(peekAt(offset))) {
+        offset++;
+    }
+
+    if (offset == 0) {
         return nullptr;
     }
 
-    // Check if followed by '(' -> function declaration
-    // If not followed by '(', it is a variable declaration (e.g. 'int x = 10;' or 'int x;').
-    // Do not confuse function declaration with variable declaration: return nullptr cleanly.
-    if (peekAt(2).type != TokenType::Punctuation || peekAt(2).lexeme != "(") {
+    // Special check for error cases where identifier was expected:
+    // e.g. 'int 123();' or 'void ();'
+    if (peekAt(offset).type != TokenType::Identifier) {
+        if (peekAt(offset).type == TokenType::Punctuation && peekAt(offset).lexeme == "(") {
+            Token typeTok = advance();
+            error("Expected identifier after '" + typeTok.lexeme + "'");
+            return nullptr;
+        }
+        if (peekAt(offset + 1).type == TokenType::Punctuation && peekAt(offset + 1).lexeme == "(") {
+            Token typeTok = advance();
+            error("Expected identifier after '" + typeTok.lexeme + "'");
+            return nullptr;
+        }
+        // It's a variable declaration or other statement (e.g. 'int x;', 'const int x = 10;').
+        // Return nullptr without consuming any tokens.
         return nullptr;
     }
 
-    // Consume return type and function name
-    Token returnTypeTok = advance();
-    SourceLocation loc{returnTypeTok.line, returnTypeTok.column};
-    std::string returnType = returnTypeTok.lexeme;
+    // Check if token after identifier is '('
+    if (peekAt(offset + 1).type != TokenType::Punctuation || peekAt(offset + 1).lexeme != "(") {
+        // Not a function declaration!
+        return nullptr;
+    }
+
+    // It is a function declaration: parse declaration specifiers
+    DeclSpecifiers specs;
+    if (!parseDeclarationSpecifiers(*this, specs, /*allowStorageClass=*/true, /*allowRegisterOnly=*/false)) {
+        return nullptr;
+    }
+
+    if (specs.storageClass == StorageClass::Register) {
+        error("Function declaration cannot have 'register' storage class");
+        return nullptr;
+    }
 
     Token nameTok = advance();
     std::string name = nameTok.lexeme;
 
-    auto function = std::make_unique<Function>(std::move(name), std::move(returnType), loc);
+    auto returnTypeObj = getPrimitiveType(specs.typeKind, specs.isConst, specs.isVolatile);
+    auto function = std::make_unique<Function>(std::move(name), std::move(returnTypeObj), specs.loc, false,
+                                               ParameterListKind::Unspecified, specs.storageClass);
 
     // Consume '('
     advance();
@@ -99,25 +259,8 @@ std::unique_ptr<Function> Parser::parseFunctionDeclaration() {
                 return nullptr;
             }
 
-            bool isConst = false;
-            SourceLocation paramLoc;
-            bool hasParamLoc = false;
-
-            // Check for leading 'const' qualifier (Day 38 & Day 40)
-            while (!isAtEnd() && check(TokenType::Keyword) && peek().lexeme == "const") {
-                Token constTok = advance();
-                if (!hasParamLoc) {
-                    paramLoc = {constTok.line, constTok.column};
-                    hasParamLoc = true;
-                }
-                isConst = true;
-            }
-
-            // Parameter type
-            if (isAtEnd() || !isTypeSpecifier(peek())) {
-                if (isConst) {
-                    error("Expected type specifier after 'const'");
-                } else if (!isAtEnd() && peek().type == TokenType::Identifier) {
+            if (!isDeclarationSpecifier(peek())) {
+                if (peek().type == TokenType::Identifier) {
                     error("Expected parameter type before '" + peek().lexeme + "'");
                 } else {
                     error("Expected parameter type");
@@ -125,27 +268,17 @@ std::unique_ptr<Function> Parser::parseFunctionDeclaration() {
                 return nullptr;
             }
 
-            Token paramTypeTok = advance();
-            if (!hasParamLoc) {
-                paramLoc = {paramTypeTok.line, paramTypeTok.column};
-                hasParamLoc = true;
+            DeclSpecifiers paramSpecs;
+            if (!parseDeclarationSpecifiers(*this, paramSpecs, /*allowStorageClass=*/true, /*allowRegisterOnly=*/true)) {
+                return nullptr;
             }
 
-            Token lastSpecifierTok = paramTypeTok;
-
-            // Support trailing 'const' qualifier (e.g. 'int const x' or 'int const')
-            while (!isAtEnd() && check(TokenType::Keyword) && peek().lexeme == "const") {
-                lastSpecifierTok = advance();
-                isConst = true;
-            }
-
-            TypeKind kind = typeKindFromToken(paramTypeTok);
-            if (kind == TypeKind::Void) {
+            if (paramSpecs.typeKind == TypeKind::Void) {
                 error("Parameter cannot have 'void' type");
                 return nullptr;
             }
 
-            auto typeObj = getPrimitiveType(kind, isConst);
+            auto typeObj = getPrimitiveType(paramSpecs.typeKind, paramSpecs.isConst, paramSpecs.isVolatile);
 
             // Parameter name: optional in prototypes, required in definitions
             std::string paramName;
@@ -155,7 +288,7 @@ std::unique_ptr<Function> Parser::parseFunctionDeclaration() {
             }
 
             auto param = std::make_unique<VariableDeclaration>(
-                std::move(typeObj), std::move(paramName), nullptr, paramLoc);
+                std::move(typeObj), std::move(paramName), nullptr, paramSpecs.loc, paramSpecs.storageClass);
             function->addParameter(std::move(param));
 
             if (isAtEnd()) {
@@ -245,54 +378,29 @@ std::unique_ptr<Function> Parser::parseDeclaration() {
 }
 
 // =============================================================================
-// Parser::parseVarDecl() — Day 37 & Day 38
+// Parser::parseVarDecl() — Day 37, Day 38, Day 42
 // =============================================================================
 //
 // Grammar:
 //   variable-declaration:
-//       'const'? type-specifier 'const'? identifier ( '=' expression )? ';'
+//       storage-class-specifier? type-qualifier* type-specifier type-qualifier* identifier ( '=' expression )? ';'
 //
 std::unique_ptr<VarDecl> Parser::parseVarDecl() {
     if (isAtEnd()) {
         return nullptr;
     }
 
-    bool isConst = false;
-    SourceLocation loc;
-    bool hasLoc = false;
-
-    // Check for leading 'const' qualifier (Day 38)
-    while (!isAtEnd() && check(TokenType::Keyword) && peek().lexeme == "const") {
-        Token constTok = advance();
-        if (!hasLoc) {
-            loc = {constTok.line, constTok.column};
-            hasLoc = true;
-        }
-        isConst = true;
-    }
-
-    if (isAtEnd() || !isPrimitiveTypeToken(peek())) {
-        if (isConst) {
-            error("Expected type specifier after 'const'");
-        } else {
-            error("Expected type specifier");
-        }
+    if (!isDeclarationSpecifier(peek())) {
+        error("Expected type specifier");
         return nullptr;
     }
 
-    Token typeTok = advance();
-    if (!hasLoc) {
-        loc = {typeTok.line, typeTok.column};
-        hasLoc = true;
+    DeclSpecifiers specs;
+    if (!parseDeclarationSpecifiers(*this, specs, /*allowStorageClass=*/true, /*allowRegisterOnly=*/false)) {
+        return nullptr;
     }
 
-    // Support trailing 'const' qualifier (e.g. 'int const x;')
-    while (!isAtEnd() && check(TokenType::Keyword) && peek().lexeme == "const") {
-        advance();
-        isConst = true;
-    }
-
-    auto type = getPrimitiveType(typeKindFromToken(typeTok), isConst);
+    auto type = getPrimitiveType(specs.typeKind, specs.isConst, specs.isVolatile);
 
     if (isAtEnd() || peek().type != TokenType::Identifier) {
         error("Expected identifier after type specifier");
@@ -326,7 +434,7 @@ std::unique_ptr<VarDecl> Parser::parseVarDecl() {
     }
     advance(); // consume ';'
 
-    return std::make_unique<VarDecl>(std::move(type), std::move(name), std::move(initializer), loc);
+    return std::make_unique<VarDecl>(std::move(type), std::move(name), std::move(initializer), specs.loc, specs.storageClass);
 }
 
 std::unique_ptr<VarDecl> Parser::parseVariableDeclaration() {

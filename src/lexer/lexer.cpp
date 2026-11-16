@@ -81,6 +81,10 @@ TokenType lookupKeyword(const std::string& text) {
         {"continue", TokenType::Keyword},
         {"return",   TokenType::Keyword},
         {"const",    TokenType::Keyword},
+        {"volatile", TokenType::Keyword},
+        {"static",   TokenType::Keyword},
+        {"extern",   TokenType::Keyword},
+        {"register", TokenType::Keyword},
     };
 
     auto it = keywords.find(text);
