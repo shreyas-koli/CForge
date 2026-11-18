@@ -58,18 +58,44 @@ std::unique_ptr<Statement> Parser::parseStatement() {
 }
 
 // =============================================================================
-// parseCompoundStatement() — Day 28 Compound Statements
+// parseBlockItem() — Day 43 Block Item Parsing (C99/C17 §6.8.2)
 // =============================================================================
 //
 // Grammar:
+//   block-item:
+//       declaration
+//       statement
+//
+std::unique_ptr<Statement> Parser::parseBlockItem() {
+    if (isAtEnd()) {
+        return nullptr;
+    }
+
+    if (isDeclarationSpecifier(peek())) {
+        return parseVarDecl();
+    }
+
+    return parseStatement();
+}
+
+// =============================================================================
+// parseCompoundStatement() — Day 28 & Day 43 Compound Statements / Blocks
+// =============================================================================
+//
+// Grammar (C99/C17 §6.8.2):
 //   compound-statement:
-//       '{' statement-list? '}'
+//       '{' block-item-list? '}'
 //
-//   statement-list:
-//       statement*
+//   block-item-list:
+//       block-item*
 //
-// Recognizes '{' as the start of a block, parses child statements until matching '}',
-// and reports a clear diagnostic if '}' is missing or malformed.
+//   block-item:
+//       declaration
+//       statement
+//
+// Recognizes '{' as the start of a block, parses child block items (declarations
+// and statements) until matching '}', and reports a clear diagnostic if '}' is
+// missing or malformed.
 //
 std::unique_ptr<CompoundStmt> Parser::parseCompoundStatement() {
     if (isAtEnd() || !check(TokenType::Punctuation) || peek().lexeme != "{") {
@@ -84,9 +110,9 @@ std::unique_ptr<CompoundStmt> Parser::parseCompoundStatement() {
     auto compound = std::make_unique<CompoundStmt>(loc);
 
     while (!isAtEnd() && !(check(TokenType::Punctuation) && peek().lexeme == "}")) {
-        auto stmt = parseStatement();
+        auto stmt = parseBlockItem();
         if (!stmt) {
-            // parseStatement encountered an error or invalid token;
+            // parseBlockItem encountered an error or invalid token;
             // return nullptr cleanly with diagnostic preserved.
             return nullptr;
         }

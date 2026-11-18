@@ -275,12 +275,12 @@ TEST_CASE("CompoundStmt: error reporting and malformed blocks", "[parser][compou
         CHECK(parser.errorMessage().find("Expected '{'") != std::string::npos);
     }
 
-    SECTION("unsupported statement token inside block: '{ int }'") {
-        Parser parser = makeParser("{ int }");
+    SECTION("unsupported statement token inside block: '{ return }'") {
+        Parser parser = makeParser("{ return }");
         auto block = parser.parseCompoundStatement();
         CHECK(block == nullptr);
         CHECK(parser.hasError());
-        CHECK(parser.errorMessage().find("Expected statement, found 'int'") != std::string::npos);
+        CHECK(parser.errorMessage().find("Expected statement, found 'return'") != std::string::npos);
     }
 
     SECTION("trailing unexpected tokens after valid compound statement") {

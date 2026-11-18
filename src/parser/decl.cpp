@@ -28,6 +28,10 @@ static bool isDeclarationSpecifier(const Token& tok) {
     return isTypeSpecifier(tok) || isTypeQualifier(tok) || isStorageClassSpecifier(tok);
 }
 
+bool Parser::isDeclarationSpecifier(const Token& tok) const {
+    return ::isDeclarationSpecifier(tok);
+}
+
 struct DeclSpecifiers {
     StorageClass storageClass{StorageClass::None};
     std::string storageClassToken;

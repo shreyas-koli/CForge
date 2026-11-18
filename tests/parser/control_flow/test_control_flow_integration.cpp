@@ -771,8 +771,8 @@ TEST_CASE("ControlFlowIntegration: Group F - Negative and error diagnostics", "[
         CHECK(parser.errorMessage().find("Expected statement, found 'return'") != std::string::npos);
     }
 
-    SECTION("unexpected declaration token in statement position: 'while (1) { int x; }'") {
-        Parser parser = makeParser("while (1) { int x; }");
+    SECTION("unexpected declaration token in statement position: 'while (1) int x;'") {
+        Parser parser = makeParser("while (1) int x;");
         auto stmt = parser.parseStatement();
         CHECK(stmt == nullptr);
         CHECK(parser.hasError());

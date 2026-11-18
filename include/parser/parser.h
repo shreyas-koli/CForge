@@ -48,10 +48,17 @@ public:
     // Compound statement parsing (Day 28)
     // Grammar:
     //   compound-statement:
-    //       '{' statement-list? '}'
-    //   statement-list:
-    //       statement*
+    //       '{' block-item-list? '}'
+    //   block-item-list:
+    //       block-item*
+    //   block-item:
+    //       declaration
+    //       statement
     std::unique_ptr<CompoundStmt> parseCompoundStatement();
+    std::unique_ptr<Statement> parseBlockItem();
+
+    // Declaration specifier check (Day 42, Day 43)
+    bool isDeclarationSpecifier(const Token& tok) const;
 
     // Selection statement parsing — 'if' (Day 29)
     // Grammar:
