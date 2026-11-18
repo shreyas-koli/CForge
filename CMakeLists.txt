@@ -47,6 +47,7 @@ add_executable(cforge
     src/parser/stmt.cpp
     src/types/type.cpp
     src/types/conversions.cpp
+    src/semantic/symbol_table.cpp
 )
 
 # -----------------------------------------------------------------------------
@@ -105,6 +106,7 @@ add_executable(cforge_tests
     tests/parser/test_storage_and_qualifiers.cpp
     tests/parser/test_declarations_and_scopes.cpp
     tests/types/test_phase5_integration.cpp
+    tests/semantic/test_symbol_table.cpp
     src/driver/pipeline.cpp
     src/lexer/token.cpp
     src/lexer/lexer.cpp
@@ -135,6 +137,7 @@ add_executable(cforge_tests
     src/parser/stmt.cpp
     src/types/type.cpp
     src/types/conversions.cpp
+    src/semantic/symbol_table.cpp
 )
 target_link_libraries(cforge_tests PRIVATE Catch2::Catch2)
 
