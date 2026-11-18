@@ -104,6 +104,7 @@ add_executable(cforge_tests
     tests/parser/test_function_return_types.cpp
     tests/parser/test_storage_and_qualifiers.cpp
     tests/parser/test_declarations_and_scopes.cpp
+    tests/types/test_phase5_integration.cpp
     src/driver/pipeline.cpp
     src/lexer/token.cpp
     src/lexer/lexer.cpp
