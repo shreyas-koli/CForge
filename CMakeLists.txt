@@ -48,6 +48,7 @@ add_executable(cforge
     src/types/type.cpp
     src/types/conversions.cpp
     src/semantic/symbol_table.cpp
+    src/semantic/checks/redeclaration.cpp
 )
 
 # -----------------------------------------------------------------------------
@@ -108,6 +109,7 @@ add_executable(cforge_tests
     tests/types/test_phase5_integration.cpp
     tests/semantic/test_symbol_table.cpp
     tests/semantic/test_scope_management.cpp
+    tests/semantic/test_redeclaration.cpp
     src/driver/pipeline.cpp
     src/lexer/token.cpp
     src/lexer/lexer.cpp
@@ -139,6 +141,7 @@ add_executable(cforge_tests
     src/types/type.cpp
     src/types/conversions.cpp
     src/semantic/symbol_table.cpp
+    src/semantic/checks/redeclaration.cpp
 )
 target_link_libraries(cforge_tests PRIVATE Catch2::Catch2)
 
