@@ -30,12 +30,12 @@ enum class SymbolKind {
 const char* symbolKindToString(SymbolKind kind);
 
 // =============================================================================
-// Symbol — Metadata Entry for a Declared Identifier (Day 45)
+// Symbol — Metadata Entry for a Declared Identifier (Day 45 & Day 46)
 // =============================================================================
 //
 // Represents a single entry in the symbol table, associating an identifier name
 // with its declared type, kind (variable vs function), source location,
-// storage class, and AST node reference.
+// storage class, declaring scope level, and AST node reference.
 //
 class Symbol {
 public:
@@ -91,6 +91,12 @@ public:
     const ASTNode* astNode() const { return m_astNode; }
     const ASTNode* getASTNode() const { return m_astNode; }
     void setASTNode(const ASTNode* node) { m_astNode = node; }
+
+    // Scope level accessors (Day 46)
+    std::size_t scopeLevel() const noexcept { return m_scopeLevel; }
+    std::size_t getScopeLevel() const noexcept { return m_scopeLevel; }
+    void setScopeLevel(std::size_t level) noexcept { m_scopeLevel = level; }
+    bool isGlobal() const noexcept { return m_scopeLevel == 0; }
 
     // Function-specific accessors
     const Type* returnType() const { return m_type.get(); }
@@ -167,6 +173,7 @@ private:
     SourceLocation m_location{};
     StorageClass m_storageClass{StorageClass::None};
     const ASTNode* m_astNode{nullptr};
+    std::size_t m_scopeLevel{0};
 
     // Function-specific metadata
     std::vector<std::shared_ptr<Type>> m_paramTypes;
@@ -176,21 +183,34 @@ private:
 };
 
 // =============================================================================
-// SymbolTable — Global Symbol Table Data Structure (Day 45)
+// SymbolTable — Nested Scope Symbol Table Data Structure (Day 45 & Day 46)
 // =============================================================================
 //
-// Maps identifier names to declared type/kind information for global declarations.
-// Provides insertion, lookup, iteration, and AST walking over Program,
-// VarDecl, and FunctionDecl nodes.
-//
-// Note: Handles global declarations only; nested scope management is Day 46.
+// Maps identifier names to declared type/kind information across nested scopes.
+// Supports pushScope(), popScope(), innermost-to-outermost lookup, inner-scope
+// shadowing of outer declarations, duplicate declaration rejection within the
+// same scope, and removal of visibility upon scope exit.
 //
 class SymbolTable {
 public:
-    SymbolTable() = default;
+    struct Scope {
+        std::unordered_map<std::string, Symbol> symbols;
+        std::vector<std::string> order;
+    };
+
+    SymbolTable();
     ~SymbolTable() = default;
 
-    // Insertion
+    // Scope management (Day 46)
+    void pushScope();
+    bool popScope();
+    std::size_t scopeDepth() const noexcept;
+    std::size_t currentScopeLevel() const noexcept;
+    std::size_t scopeLevel() const noexcept { return currentScopeLevel(); }
+    bool isGlobalScope() const noexcept;
+    void resetToGlobalScope() noexcept;
+
+    // Insertion (targets the current innermost scope)
     bool insert(const Symbol& symbol);
     bool insert(Symbol&& symbol);
     bool insert(const VarDecl& varDecl);
@@ -198,7 +218,7 @@ public:
     bool insert(const VariableDeclaration& varDecl);
     void insertOrAssign(const Symbol& symbol);
 
-    // Lookup
+    // Lookup (searches innermost to outermost scope)
     const Symbol* lookup(const std::string& name) const;
     Symbol* lookup(const std::string& name);
     const Symbol* find(const std::string& name) const { return lookup(name); }
@@ -206,22 +226,37 @@ public:
     const Symbol* get(const std::string& name) const { return lookup(name); }
     Symbol* get(const std::string& name) { return lookup(name); }
 
+    // Scope-specific lookups (Day 46)
+    const Symbol* lookupCurrentScope(const std::string& name) const;
+    Symbol* lookupCurrentScope(const std::string& name);
+    const Symbol* lookupGlobal(const std::string& name) const;
+    Symbol* lookupGlobal(const std::string& name);
+
     // Existence queries
     bool contains(const std::string& name) const;
     bool has(const std::string& name) const { return contains(name); }
+    bool containsCurrentScope(const std::string& name) const;
+    bool containsGlobal(const std::string& name) const;
 
-    // Removal
+    // Removal (from current scope)
     bool remove(const std::string& name);
 
     // Size queries
-    std::size_t size() const noexcept { return m_symbols.size(); }
-    bool empty() const noexcept { return m_symbols.empty(); }
+    std::size_t size() const noexcept;
+    std::size_t currentScopeSize() const noexcept;
+    std::size_t globalScopeSize() const noexcept;
+    bool empty() const noexcept;
     void clear() noexcept;
 
-    // Access to symbol collection
-    const std::unordered_map<std::string, Symbol>& symbols() const noexcept { return m_symbols; }
-    const std::vector<std::string>& order() const noexcept { return m_insertionOrder; }
+    // Access to scope and symbol collection
+    const std::unordered_map<std::string, Symbol>& symbols() const noexcept;
+    const std::vector<std::string>& order() const noexcept;
+    const Scope& currentScope() const;
+    const Scope& scopeAt(std::size_t index) const;
+    const std::vector<Scope>& scopes() const noexcept { return m_scopes; }
+
     std::vector<const Symbol*> getAllSymbols() const;
+    std::vector<const Symbol*> getAllVisibleSymbols() const;
 
     // AST population (global declarations only)
     void populate(const Program& program);
@@ -234,6 +269,23 @@ public:
     std::string toString() const;
 
 private:
-    std::unordered_map<std::string, Symbol> m_symbols;
-    std::vector<std::string> m_insertionOrder;
+    std::vector<Scope> m_scopes;
+};
+
+// =============================================================================
+// ScopeGuard — RAII Helper for Scoped Block Entry/Exit (Day 46)
+// =============================================================================
+class ScopeGuard {
+public:
+    explicit ScopeGuard(SymbolTable& table) : m_table(table) {
+        m_table.pushScope();
+    }
+    ~ScopeGuard() {
+        m_table.popScope();
+    }
+    ScopeGuard(const ScopeGuard&) = delete;
+    ScopeGuard& operator=(const ScopeGuard&) = delete;
+
+private:
+    SymbolTable& m_table;
 };

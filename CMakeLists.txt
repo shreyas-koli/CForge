@@ -107,6 +107,7 @@ add_executable(cforge_tests
     tests/parser/test_declarations_and_scopes.cpp
     tests/types/test_phase5_integration.cpp
     tests/semantic/test_symbol_table.cpp
+    tests/semantic/test_scope_management.cpp
     src/driver/pipeline.cpp
     src/lexer/token.cpp
     src/lexer/lexer.cpp
