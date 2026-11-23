@@ -1,4 +1,5 @@
 #include "parser/parser.h"
+#include "ast/call_expr.h"
 
 // =============================================================================
 // parseExpression() & parseBinaryExpression() — Day 15 & Day 16
@@ -97,11 +98,38 @@ std::unique_ptr<Expression> Parser::parseUnary() {
         return nullptr;
     }
 
-    // Postfix operators ('++' and '--')
-    while (!isAtEnd() && check(TokenType::Operator) &&
-           (peek().lexeme == "++" || peek().lexeme == "--")) {
-        Token opToken = advance();
-        expr = std::make_unique<UnaryExpr>(opToken.lexeme, std::move(expr), expr->location());
+    // Postfix operators ('++', '--', and function call '()')
+    while (!isAtEnd()) {
+        if (check(TokenType::Operator) && (peek().lexeme == "++" || peek().lexeme == "--")) {
+            Token opToken = advance();
+            expr = std::make_unique<UnaryExpr>(opToken.lexeme, std::move(expr), expr->location());
+        } else if (check(TokenType::Punctuation) && peek().lexeme == "(") {
+            Token openParen = advance(); // consume '('
+            std::vector<std::unique_ptr<Expression>> args;
+            if (!(check(TokenType::Punctuation) && peek().lexeme == ")")) {
+                while (!isAtEnd()) {
+                    auto arg = parseAssignment();
+                    if (!arg) {
+                        return nullptr;
+                    }
+                    args.push_back(std::move(arg));
+                    if (check(TokenType::Punctuation) && peek().lexeme == ",") {
+                        advance(); // consume ','
+                    } else {
+                        break;
+                    }
+                }
+            }
+            if (isAtEnd() || !check(TokenType::Punctuation) || peek().lexeme != ")") {
+                error("Expected ')' after argument list");
+                return nullptr;
+            }
+            advance(); // consume ')'
+            SourceLocation loc = expr ? expr->location() : SourceLocation{openParen.line, openParen.column};
+            expr = std::make_unique<CallExpr>(std::move(expr), std::move(args), loc);
+        } else {
+            break;
+        }
     }
 
     return expr;

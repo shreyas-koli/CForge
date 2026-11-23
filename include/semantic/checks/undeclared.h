@@ -3,6 +3,7 @@
 #include "ast/assign_expr.h"
 #include "ast/ast_node.h"
 #include "ast/binary_expr.h"
+#include "ast/call_expr.h"
 #include "ast/compound_stmt.h"
 #include "ast/conditional_expr.h"
 #include "ast/do_while_stmt.h"
@@ -71,6 +72,8 @@ public:
     bool check(const BinaryExpr& binary);
     bool check(const UnaryExpr& unary);
     bool check(const ConditionalExpr& cond);
+    bool check(const CallExpr& call);
+    bool checkCallExpr(const CallExpr& call);
     bool check(const IfStmt& ifStmt);
     bool check(const WhileStmt& whileStmt);
     bool check(const DoWhileStmt& doWhileStmt);

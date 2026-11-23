@@ -36,6 +36,7 @@ add_executable(cforge
     src/ast/var_decl.cpp
     src/ast/literal_expression.cpp
     src/ast/identifier_expression.cpp
+    src/ast/call_expr.cpp
     src/ast/assign_expr.cpp
     src/ast/conditional_expr.cpp
     src/ast/binary_expr.cpp
@@ -50,6 +51,8 @@ add_executable(cforge
     src/semantic/symbol_table.cpp
     src/semantic/checks/redeclaration.cpp
     src/semantic/checks/undeclared.cpp
+    src/semantic/checks/call_check.cpp
+    src/semantic/type_checker.cpp
 )
 
 # -----------------------------------------------------------------------------
@@ -112,6 +115,8 @@ add_executable(cforge_tests
     tests/semantic/test_scope_management.cpp
     tests/semantic/test_redeclaration.cpp
     tests/semantic/test_undeclared.cpp
+    tests/semantic/test_type_checker.cpp
+    tests/semantic/test_call_check.cpp
     src/driver/pipeline.cpp
     src/lexer/token.cpp
     src/lexer/lexer.cpp
@@ -131,6 +136,7 @@ add_executable(cforge_tests
     src/ast/var_decl.cpp
     src/ast/literal_expression.cpp
     src/ast/identifier_expression.cpp
+    src/ast/call_expr.cpp
     src/ast/assign_expr.cpp
     src/ast/conditional_expr.cpp
     src/ast/binary_expr.cpp
@@ -145,6 +151,8 @@ add_executable(cforge_tests
     src/semantic/symbol_table.cpp
     src/semantic/checks/redeclaration.cpp
     src/semantic/checks/undeclared.cpp
+    src/semantic/checks/call_check.cpp
+    src/semantic/type_checker.cpp
 )
 target_link_libraries(cforge_tests PRIVATE Catch2::Catch2)
 

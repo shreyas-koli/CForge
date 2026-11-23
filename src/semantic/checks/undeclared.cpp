@@ -1,4 +1,5 @@
 #include "semantic/checks/undeclared.h"
+#include "ast/call_expr.h"
 
 // =============================================================================
 // UndeclaredChecker Implementation (Day 48)
@@ -116,6 +117,29 @@ bool UndeclaredChecker::check(const ConditionalExpr& cond) {
     return checkConditionalExpr(cond);
 }
 
+bool UndeclaredChecker::check(const CallExpr& call) {
+    return checkCallExpr(call);
+}
+
+bool UndeclaredChecker::checkCallExpr(const CallExpr& call) {
+    bool ok = true;
+    // Callee function identifier resolution and callable verification are owned by CallChecker
+    // to prevent duplicate undeclared-identifier diagnostics when multiple semantic
+    // checkers run. For non-identifier callee expressions (e.g. nested calls or complex
+    // expressions), recursively traverse.
+    if (call.callee() && !dynamic_cast<const IdentifierExpression*>(call.callee())) {
+        if (!checkExpression(*call.callee())) {
+            ok = false;
+        }
+    }
+    for (const auto& arg : call.arguments()) {
+        if (arg && !checkExpression(*arg)) {
+            ok = false;
+        }
+    }
+    return ok;
+}
+
 bool UndeclaredChecker::check(const IfStmt& ifStmt) {
     return checkIfStmt(ifStmt);
 }
@@ -192,6 +216,9 @@ bool UndeclaredChecker::checkExpression(const Expression& expr) {
     }
     if (const auto* cond = dynamic_cast<const ConditionalExpr*>(&expr)) {
         return checkConditionalExpr(*cond);
+    }
+    if (const auto* call = dynamic_cast<const CallExpr*>(&expr)) {
+        return checkCallExpr(*call);
     }
     // LiteralExpression contains no identifiers
     return true;

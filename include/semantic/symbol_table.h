@@ -114,6 +114,8 @@ public:
     void setParameterListKind(ParameterListKind kind) { m_paramListKind = kind; }
     bool hasVoidParameterList() const { return m_paramListKind == ParameterListKind::Void; }
     bool hasUnspecifiedParameters() const { return m_paramListKind == ParameterListKind::Unspecified; }
+    bool isParameterListTyped() const { return m_paramListKind == ParameterListKind::Typed; }
+    bool isParameterListVoid() const { return m_paramListKind == ParameterListKind::Void; }
 
     std::size_t parameterCount() const { return m_paramTypes.size(); }
     const std::vector<std::shared_ptr<Type>>& parameterTypes() const { return m_paramTypes; }

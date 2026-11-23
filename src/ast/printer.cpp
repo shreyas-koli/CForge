@@ -1,6 +1,7 @@
 #include "ast/printer.h"
 
 #include "ast/assign_expr.h"
+#include "ast/call_expr.h"
 #include "ast/binary_expr.h"
 #include "ast/break_stmt.h"
 #include "ast/compound_stmt.h"
@@ -74,6 +75,8 @@ void ASTPrinter::printNode(std::ostream& out, const ASTNode* node, int level) co
         printConditional(out, cond, level);
     } else if (auto* un = dynamic_cast<const UnaryExpr*>(node)) {
         printUnary(out, un, level);
+    } else if (auto* call = dynamic_cast<const CallExpr*>(node)) {
+        printCall(out, call, level);
     } else if (auto* lit = dynamic_cast<const LiteralExpression*>(node)) {
         printLiteral(out, lit, level);
     } else if (auto* id = dynamic_cast<const IdentifierExpression*>(node)) {
@@ -181,6 +184,24 @@ void ASTPrinter::printUnary(std::ostream& out, const UnaryExpr* un, int level) c
     out << makeIndent(level) << "UnaryExpr: " << un->op() << "\n";
     out << makeIndent(level + 1) << "Operand:\n";
     printNode(out, un->operand(), level + 2);
+}
+
+void ASTPrinter::printCall(std::ostream& out, const CallExpr* call, int level) const {
+    out << makeIndent(level) << "CallExpr";
+    if (!call->calleeName().empty()) {
+        out << ": " << call->calleeName();
+    }
+    out << "\n";
+    if (call->callee() && call->calleeName().empty()) {
+        out << makeIndent(level + 1) << "Callee:\n";
+        printNode(out, call->callee(), level + 2);
+    }
+    if (call->argumentCount() > 0) {
+        out << makeIndent(level + 1) << "Arguments:\n";
+        for (std::size_t i = 0; i < call->argumentCount(); ++i) {
+            printNode(out, call->argument(i), level + 2);
+        }
+    }
 }
 
 void ASTPrinter::printConditional(std::ostream& out, const ConditionalExpr* cond, int level) const {
