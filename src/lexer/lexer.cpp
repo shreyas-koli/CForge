@@ -378,6 +378,14 @@ Token Lexer::scanNumericLiteral() {
         }
     }
 
+    // Floating-point suffix: f, F, l, L (C17 §6.4.4.2)
+    if (isFloat && !isAtEnd()) {
+        char ch = peek();
+        if (ch == 'f' || ch == 'F' || ch == 'l' || ch == 'L') {
+            advance();
+        }
+    }
+
     std::string lexeme = m_source.substr(startPos, m_pos - startPos);
     TokenType   type   = isFloat ? TokenType::Float : TokenType::Integer;
     return Token{type, lexeme, startLine, startColumn};

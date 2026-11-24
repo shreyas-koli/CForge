@@ -441,6 +441,17 @@ TEST_CASE("Float: 123.456", "[lexer][numeric][float]") {
     CHECK(t.lexeme == "123.456");
 }
 
+TEST_CASE("Float with suffix: 3.14f, 3.14F, 3.14L, 3.14l", "[lexer][numeric][float][suffix]") {
+    CHECK(lexFirst("3.14f").lexeme == "3.14f");
+    CHECK(lexFirst("3.14f").type   == TokenType::Float);
+    CHECK(lexFirst("3.14F").lexeme == "3.14F");
+    CHECK(lexFirst("3.14F").type   == TokenType::Float);
+    CHECK(lexFirst("3.14L").lexeme == "3.14L");
+    CHECK(lexFirst("3.14L").type   == TokenType::Float);
+    CHECK(lexFirst("3.14l").lexeme == "3.14l");
+    CHECK(lexFirst("3.14l").type   == TokenType::Float);
+}
+
 // -----------------------------------------------------------------------------
 // Exponent floats
 // -----------------------------------------------------------------------------
