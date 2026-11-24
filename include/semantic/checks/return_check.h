@@ -13,7 +13,7 @@
 #include "ast/var_decl.h"
 #include "ast/variable_declaration.h"
 #include "ast/while_stmt.h"
-#include "semantic/checks/redeclaration.h"
+#include "semantic/diagnostics.h"
 #include "semantic/symbol_table.h"
 #include "semantic/type_checker.h"
 #include "types/conversions.h"
@@ -95,10 +95,37 @@ public:
     const Function* currentFunction() const noexcept { return m_currentFunction; }
 
     // Diagnostic queries
-    bool hasErrors() const noexcept { return !m_diagnostics.empty(); }
-    std::size_t errorCount() const noexcept { return m_diagnostics.size(); }
+    bool hasErrors() const noexcept {
+        for (const auto& d : m_diagnostics) {
+            if (d.isError()) return true;
+        }
+        return false;
+    }
+    std::size_t errorCount() const noexcept {
+        std::size_t count = 0;
+        for (const auto& d : m_diagnostics) {
+            if (d.isError()) ++count;
+        }
+        return count;
+    }
     const std::vector<Diagnostic>& diagnostics() const noexcept { return m_diagnostics; }
     const std::vector<Diagnostic>& errors() const noexcept { return m_diagnostics; }
+
+    bool hasWarnings() const noexcept {
+        for (const auto& d : m_diagnostics) {
+            if (d.isWarning()) return true;
+        }
+        return false;
+    }
+    std::size_t warningCount() const noexcept {
+        std::size_t count = 0;
+        for (const auto& d : m_diagnostics) {
+            if (d.isWarning()) ++count;
+        }
+        return count;
+    }
+    void reportWarning(const std::string& message, SourceLocation loc = {}, const std::string& id = "");
+    void reportError(const std::string& message, SourceLocation loc = {}, const std::string& id = "");
 
 private:
     bool checkProgram(const Program& program);
@@ -116,8 +143,6 @@ private:
     bool validateReturn(const ReturnStmt& ret,
                         const Type& expectedType,
                         const std::string& fnName);
-
-    void reportError(const std::string& message, SourceLocation loc, const std::string& id = "");
 
     std::unique_ptr<SymbolTable> m_ownedTable;
     SymbolTable& m_table;

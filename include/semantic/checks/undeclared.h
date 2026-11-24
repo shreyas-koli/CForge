@@ -21,7 +21,7 @@
 #include "ast/variable_declaration.h"
 #include "ast/while_stmt.h"
 #include "lexer/token.h"
-#include "semantic/checks/redeclaration.h"
+#include "semantic/diagnostics.h"
 #include "semantic/symbol_table.h"
 
 #include <cstddef>
@@ -81,10 +81,37 @@ public:
     bool check(const ForStmt& forStmt);
 
     // Error and diagnostic queries
-    bool hasErrors() const noexcept { return !m_diagnostics.empty(); }
-    std::size_t errorCount() const noexcept { return m_diagnostics.size(); }
+    bool hasErrors() const noexcept {
+        for (const auto& d : m_diagnostics) {
+            if (d.isError()) return true;
+        }
+        return false;
+    }
+    std::size_t errorCount() const noexcept {
+        std::size_t count = 0;
+        for (const auto& d : m_diagnostics) {
+            if (d.isError()) ++count;
+        }
+        return count;
+    }
     const std::vector<Diagnostic>& diagnostics() const noexcept { return m_diagnostics; }
     const std::vector<Diagnostic>& errors() const noexcept { return m_diagnostics; }
+
+    bool hasWarnings() const noexcept {
+        for (const auto& d : m_diagnostics) {
+            if (d.isWarning()) return true;
+        }
+        return false;
+    }
+    std::size_t warningCount() const noexcept {
+        std::size_t count = 0;
+        for (const auto& d : m_diagnostics) {
+            if (d.isWarning()) ++count;
+        }
+        return count;
+    }
+    void reportWarning(const std::string& message, SourceLocation loc = {}, const std::string& id = "");
+    void reportError(const std::string& message, SourceLocation loc = {}, const std::string& id = "");
 
     // State reset
     void clear();

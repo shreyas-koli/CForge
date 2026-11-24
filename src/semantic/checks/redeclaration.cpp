@@ -8,23 +8,6 @@
 #include <sstream>
 
 // =============================================================================
-// Diagnostic Implementation (Day 47)
-// =============================================================================
-
-std::string Diagnostic::toString() const {
-    std::string s;
-    if (location.line > 0) {
-        s += std::to_string(location.line) + ":" + std::to_string(location.column) + ": ";
-    }
-    s += "error: " + message;
-    if (hasPreviousLocation && previousLocation.line > 0) {
-        s += " (previously declared at " + std::to_string(previousLocation.line) +
-             ":" + std::to_string(previousLocation.column) + ")";
-    }
-    return s;
-}
-
-// =============================================================================
 // RedeclarationChecker Implementation (Day 47)
 // =============================================================================
 
@@ -47,14 +30,23 @@ void RedeclarationChecker::reportDuplicate(const std::string& name,
                                            SourceLocation loc,
                                            const Symbol* existing) {
     SourceLocation prevLoc = existing ? existing->location() : SourceLocation{};
-    bool hasPrev = existing && (prevLoc.line > 0);
+    bool hasPrev = existing && (prevLoc.line > 0 || prevLoc.hasFilename());
     m_diagnostics.emplace_back(
         name,
         "duplicate declaration of '" + name + "'",
         loc,
         prevLoc,
-        hasPrev
+        hasPrev,
+        DiagnosticSeverity::Error
     );
+}
+
+void RedeclarationChecker::reportWarning(const std::string& message, SourceLocation loc, const std::string& id) {
+    m_diagnostics.emplace_back(id, message, loc, SourceLocation{}, false, DiagnosticSeverity::Warning);
+}
+
+void RedeclarationChecker::reportError(const std::string& message, SourceLocation loc, const std::string& id) {
+    m_diagnostics.emplace_back(id, message, loc, SourceLocation{}, false, DiagnosticSeverity::Error);
 }
 
 bool RedeclarationChecker::check(const Program& program) {

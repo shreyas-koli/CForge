@@ -24,7 +24,21 @@ void TypeChecker::reportError(const std::string& message, SourceLocation loc, co
     m_diagnostics.emplace_back(
         id,
         message,
-        loc
+        loc,
+        SourceLocation{},
+        false,
+        DiagnosticSeverity::Error
+    );
+}
+
+void TypeChecker::reportWarning(const std::string& message, SourceLocation loc, const std::string& id) {
+    m_diagnostics.emplace_back(
+        id,
+        message,
+        loc,
+        SourceLocation{},
+        false,
+        DiagnosticSeverity::Warning
     );
 }
 

@@ -1,12 +1,14 @@
 #include "parser/parser.h"
 
-Parser::Parser(std::vector<Token> tokens)
+Parser::Parser(std::vector<Token> tokens, std::string filename)
     : m_tokens(std::move(tokens))
-    , m_current(0) {}
+    , m_current(0)
+    , m_filename(std::move(filename)) {}
 
-Parser::Parser(Lexer& lexer)
+Parser::Parser(Lexer& lexer, std::string filename)
     : m_tokens(lexer.tokenize())
-    , m_current(0) {}
+    , m_current(0)
+    , m_filename(std::move(filename)) {}
 
 bool Parser::isAtEnd() const {
     if (m_current >= m_tokens.size()) {

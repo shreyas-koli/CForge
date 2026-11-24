@@ -15,42 +15,7 @@
 #include <string>
 #include <vector>
 
-// =============================================================================
-// Diagnostic — Semantic Analysis Error / Warning Message (Day 47)
-// =============================================================================
-//
-// Records diagnostic information for semantic checks, including the identifier
-// involved, error message, source location of the offending declaration, and
-// the location of the previous declaration in the same scope if available.
-//
-struct Diagnostic {
-    std::string identifier;
-    std::string message;
-    SourceLocation location{};
-    SourceLocation previousLocation{};
-    bool hasPreviousLocation{false};
-
-    Diagnostic() = default;
-
-    Diagnostic(std::string id,
-               std::string msg,
-               SourceLocation loc = {},
-               SourceLocation prevLoc = {},
-               bool hasPrev = false)
-        : identifier(std::move(id))
-        , message(std::move(msg))
-        , location(loc)
-        , previousLocation(prevLoc)
-        , hasPreviousLocation(hasPrev)
-    {}
-
-    const std::string& getIdentifier() const noexcept { return identifier; }
-    const std::string& getMessage() const noexcept { return message; }
-    SourceLocation getLocation() const noexcept { return location; }
-    SourceLocation getPreviousLocation() const noexcept { return previousLocation; }
-
-    std::string toString() const;
-};
+#include "semantic/diagnostics.h"
 
 // =============================================================================
 // RedeclarationChecker — Day 47 Duplicate Declaration Detection
@@ -85,10 +50,37 @@ public:
     bool check(const VariableDeclaration& varDecl);
 
     // Error and diagnostic queries
-    bool hasErrors() const noexcept { return !m_diagnostics.empty(); }
-    std::size_t errorCount() const noexcept { return m_diagnostics.size(); }
+    bool hasErrors() const noexcept {
+        for (const auto& d : m_diagnostics) {
+            if (d.isError()) return true;
+        }
+        return false;
+    }
+    std::size_t errorCount() const noexcept {
+        std::size_t count = 0;
+        for (const auto& d : m_diagnostics) {
+            if (d.isError()) ++count;
+        }
+        return count;
+    }
     const std::vector<Diagnostic>& diagnostics() const noexcept { return m_diagnostics; }
     const std::vector<Diagnostic>& errors() const noexcept { return m_diagnostics; }
+
+    bool hasWarnings() const noexcept {
+        for (const auto& d : m_diagnostics) {
+            if (d.isWarning()) return true;
+        }
+        return false;
+    }
+    std::size_t warningCount() const noexcept {
+        std::size_t count = 0;
+        for (const auto& d : m_diagnostics) {
+            if (d.isWarning()) ++count;
+        }
+        return count;
+    }
+    void reportWarning(const std::string& message, SourceLocation loc = {}, const std::string& id = "");
+    void reportError(const std::string& message, SourceLocation loc = {}, const std::string& id = "");
 
     // State reset
     void clear();

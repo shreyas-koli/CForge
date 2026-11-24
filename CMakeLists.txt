@@ -50,6 +50,7 @@ add_executable(cforge
     src/types/type.cpp
     src/types/conversions.cpp
     src/semantic/symbol_table.cpp
+    src/semantic/diagnostics.cpp
     src/semantic/checks/redeclaration.cpp
     src/semantic/checks/undeclared.cpp
     src/semantic/checks/call_check.cpp
@@ -120,6 +121,7 @@ add_executable(cforge_tests
     tests/semantic/test_type_checker.cpp
     tests/semantic/test_call_check.cpp
     tests/semantic/test_return_check.cpp
+    tests/semantic/test_diagnostics.cpp
     src/driver/pipeline.cpp
     src/lexer/token.cpp
     src/lexer/lexer.cpp
@@ -153,6 +155,7 @@ add_executable(cforge_tests
     src/types/type.cpp
     src/types/conversions.cpp
     src/semantic/symbol_table.cpp
+    src/semantic/diagnostics.cpp
     src/semantic/checks/redeclaration.cpp
     src/semantic/checks/undeclared.cpp
     src/semantic/checks/call_check.cpp

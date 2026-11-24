@@ -24,8 +24,19 @@ void UndeclaredChecker::reportUndeclared(const std::string& name, SourceLocation
     m_diagnostics.emplace_back(
         name,
         "use of undeclared identifier '" + name + "'",
-        loc
+        loc,
+        SourceLocation{},
+        false,
+        DiagnosticSeverity::Error
     );
+}
+
+void UndeclaredChecker::reportWarning(const std::string& message, SourceLocation loc, const std::string& id) {
+    m_diagnostics.emplace_back(id, message, loc, SourceLocation{}, false, DiagnosticSeverity::Warning);
+}
+
+void UndeclaredChecker::reportError(const std::string& message, SourceLocation loc, const std::string& id) {
+    m_diagnostics.emplace_back(id, message, loc, SourceLocation{}, false, DiagnosticSeverity::Error);
 }
 
 // -----------------------------------------------------------------------------

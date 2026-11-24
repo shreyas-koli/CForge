@@ -80,7 +80,7 @@ static bool parseDeclarationSpecifiers(Parser& parser, DeclSpecifiers& specs,
 
             Token scTok = parser.advance();
             if (!specs.hasLoc) {
-                specs.loc = {scTok.line, scTok.column};
+                specs.loc = parser.makeLocation(scTok);
                 specs.hasLoc = true;
             }
             specs.storageClass = sc;
@@ -93,7 +93,7 @@ static bool parseDeclarationSpecifiers(Parser& parser, DeclSpecifiers& specs,
         if (tok.lexeme == "const") {
             Token constTok = parser.advance();
             if (!specs.hasLoc) {
-                specs.loc = {constTok.line, constTok.column};
+                specs.loc = parser.makeLocation(constTok);
                 specs.hasLoc = true;
             }
             specs.isConst = true;
@@ -104,7 +104,7 @@ static bool parseDeclarationSpecifiers(Parser& parser, DeclSpecifiers& specs,
         if (tok.lexeme == "volatile") {
             Token volTok = parser.advance();
             if (!specs.hasLoc) {
-                specs.loc = {volTok.line, volTok.column};
+                specs.loc = parser.makeLocation(volTok);
                 specs.hasLoc = true;
             }
             specs.isVolatile = true;
@@ -120,7 +120,7 @@ static bool parseDeclarationSpecifiers(Parser& parser, DeclSpecifiers& specs,
             }
             Token typeTok = parser.advance();
             if (!specs.hasLoc) {
-                specs.loc = {typeTok.line, typeTok.column};
+                specs.loc = parser.makeLocation(typeTok);
                 specs.hasLoc = true;
             }
             specs.hasType = true;

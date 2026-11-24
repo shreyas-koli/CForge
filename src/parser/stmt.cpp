@@ -106,7 +106,7 @@ std::unique_ptr<CompoundStmt> Parser::parseCompoundStatement() {
     }
 
     Token openBrace = advance(); // consume '{'
-    SourceLocation loc{openBrace.line, openBrace.column};
+    SourceLocation loc = makeLocation(openBrace);
     auto compound = std::make_unique<CompoundStmt>(loc);
 
     while (!isAtEnd() && !(check(TokenType::Punctuation) && peek().lexeme == "}")) {
@@ -155,7 +155,7 @@ std::unique_ptr<IfStmt> Parser::parseIfStatement() {
     }
 
     Token ifToken = advance(); // consume 'if'
-    SourceLocation loc{ifToken.line, ifToken.column};
+    SourceLocation loc = makeLocation(ifToken);
 
     if (isAtEnd() || !check(TokenType::Punctuation) || peek().lexeme != "(") {
         if (!hasError()) {
@@ -224,7 +224,7 @@ std::unique_ptr<WhileStmt> Parser::parseWhileStatement() {
     }
 
     Token whileToken = advance(); // consume 'while'
-    SourceLocation loc{whileToken.line, whileToken.column};
+    SourceLocation loc = makeLocation(whileToken);
 
     if (isAtEnd() || !check(TokenType::Punctuation) || peek().lexeme != "(") {
         if (!hasError()) {
@@ -280,7 +280,7 @@ std::unique_ptr<DoWhileStmt> Parser::parseDoWhileStatement() {
     }
 
     Token doToken = advance(); // consume 'do'
-    SourceLocation loc{doToken.line, doToken.column};
+    SourceLocation loc = makeLocation(doToken);
 
     std::unique_ptr<Statement> body = parseStatement();
     if (!body) {
@@ -353,7 +353,7 @@ std::unique_ptr<ForStmt> Parser::parseForStatement() {
     }
 
     Token forToken = advance(); // consume 'for'
-    SourceLocation loc{forToken.line, forToken.column};
+    SourceLocation loc = makeLocation(forToken);
 
     if (isAtEnd() || !check(TokenType::Punctuation) || peek().lexeme != "(") {
         if (!hasError()) {
@@ -461,7 +461,7 @@ std::unique_ptr<BreakStmt> Parser::parseBreakStatement() {
     }
 
     Token breakToken = advance(); // consume 'break'
-    SourceLocation loc{breakToken.line, breakToken.column};
+    SourceLocation loc = makeLocation(breakToken);
 
     if (isAtEnd() || !check(TokenType::Punctuation) || peek().lexeme != ";") {
         if (!hasError()) {
@@ -493,7 +493,7 @@ std::unique_ptr<ContinueStmt> Parser::parseContinueStatement() {
     }
 
     Token continueToken = advance(); // consume 'continue'
-    SourceLocation loc{continueToken.line, continueToken.column};
+    SourceLocation loc = makeLocation(continueToken);
 
     if (isAtEnd() || !check(TokenType::Punctuation) || peek().lexeme != ";") {
         if (!hasError()) {
@@ -523,7 +523,7 @@ std::unique_ptr<ReturnStmt> Parser::parseReturnStatement() {
     }
 
     Token returnToken = advance(); // consume 'return'
-    SourceLocation loc{returnToken.line, returnToken.column};
+    SourceLocation loc = makeLocation(returnToken);
 
     // Check for empty return: 'return;'
     if (!isAtEnd() && check(TokenType::Punctuation) && peek().lexeme == ";") {

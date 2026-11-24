@@ -16,8 +16,18 @@
 //
 class Parser {
 public:
-    explicit Parser(std::vector<Token> tokens);
-    explicit Parser(Lexer& lexer);
+    explicit Parser(std::vector<Token> tokens, std::string filename = "");
+    explicit Parser(Lexer& lexer, std::string filename = "");
+
+    void setFilename(std::string filename) { m_filename = std::move(filename); }
+    const std::string& filename() const noexcept { return m_filename; }
+
+    SourceLocation makeLocation(const Token& tok) const {
+        return SourceLocation(m_filename, tok.line, tok.column);
+    }
+    SourceLocation makeLocation(int line, int col) const {
+        return SourceLocation(m_filename, line, col);
+    }
 
     // Program & Declaration parsing (Day 18)
     // Entry point for full translation unit parsing.
@@ -165,4 +175,5 @@ private:
     std::size_t m_current{0};
     bool m_hasError{false};
     std::string m_errorMessage;
+    std::string m_filename{};
 };

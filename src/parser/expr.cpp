@@ -80,7 +80,7 @@ std::unique_ptr<Expression> Parser::parseUnary() {
 
     if (isPrefixUnaryOperator(peek())) {
         Token opToken = advance();
-        SourceLocation loc{opToken.line, opToken.column};
+        SourceLocation loc = makeLocation(opToken);
 
         std::unique_ptr<Expression> operand = parseUnary();
         if (!operand) {
@@ -125,7 +125,7 @@ std::unique_ptr<Expression> Parser::parseUnary() {
                 return nullptr;
             }
             advance(); // consume ')'
-            SourceLocation loc = expr ? expr->location() : SourceLocation{openParen.line, openParen.column};
+            SourceLocation loc = expr ? expr->location() : makeLocation(openParen);
             expr = std::make_unique<CallExpr>(std::move(expr), std::move(args), loc);
         } else {
             break;
@@ -302,35 +302,35 @@ std::unique_ptr<Expression> Parser::parsePrimary() {
     if (tok.type == TokenType::Integer) {
         advance();
         return std::make_unique<LiteralExpression>(
-            LiteralKind::Integer, tok.lexeme, SourceLocation{tok.line, tok.column});
+            LiteralKind::Integer, tok.lexeme, makeLocation(tok));
     }
 
     // 2. Float Literal
     if (tok.type == TokenType::Float) {
         advance();
         return std::make_unique<LiteralExpression>(
-            LiteralKind::Float, tok.lexeme, SourceLocation{tok.line, tok.column});
+            LiteralKind::Float, tok.lexeme, makeLocation(tok));
     }
 
     // 3. Char Literal
     if (tok.type == TokenType::Char) {
         advance();
         return std::make_unique<LiteralExpression>(
-            LiteralKind::Char, tok.lexeme, SourceLocation{tok.line, tok.column});
+            LiteralKind::Char, tok.lexeme, makeLocation(tok));
     }
 
     // 4. String Literal
     if (tok.type == TokenType::String) {
         advance();
         return std::make_unique<LiteralExpression>(
-            LiteralKind::String, tok.lexeme, SourceLocation{tok.line, tok.column});
+            LiteralKind::String, tok.lexeme, makeLocation(tok));
     }
 
     // 5. Bare Identifier
     if (tok.type == TokenType::Identifier) {
         advance();
         return std::make_unique<IdentifierExpression>(
-            tok.lexeme, SourceLocation{tok.line, tok.column});
+            tok.lexeme, makeLocation(tok));
     }
 
     // 6. Parenthesized Expression: ( expression )
