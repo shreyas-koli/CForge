@@ -122,6 +122,7 @@ add_executable(cforge_tests
     tests/semantic/test_call_check.cpp
     tests/semantic/test_return_check.cpp
     tests/semantic/test_diagnostics.cpp
+    tests/semantic/test_semantic_regression.cpp
     src/driver/pipeline.cpp
     src/lexer/token.cpp
     src/lexer/lexer.cpp
