@@ -561,6 +561,12 @@ bool TypeChecker::checkStatement(const Statement& stmt) {
     if (const auto* forStmt = dynamic_cast<const ForStmt*>(&stmt)) {
         return checkForStmt(*forStmt);
     }
+    if (const auto* ret = dynamic_cast<const ReturnStmt*>(&stmt)) {
+        if (ret->hasExpression() && ret->expression()) {
+            return check(*ret->expression());
+        }
+        return true;
+    }
     return true;
 }
 

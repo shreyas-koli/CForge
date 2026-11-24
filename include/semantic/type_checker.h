@@ -14,6 +14,7 @@
 #include "ast/if_stmt.h"
 #include "ast/literal_expression.h"
 #include "ast/program.h"
+#include "ast/return_stmt.h"
 #include "ast/statement.h"
 #include "ast/unary_expr.h"
 #include "ast/var_decl.h"

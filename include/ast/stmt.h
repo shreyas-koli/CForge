@@ -8,6 +8,7 @@
 #include "ast/for_stmt.h"
 #include "ast/break_stmt.h"
 #include "ast/continue_stmt.h"
+#include "ast/return_stmt.h"
 
 // =============================================================================
 // Statement AST Nodes (Day 28, Day 29, Day 31, Day 32, Day 33 & Day 34)

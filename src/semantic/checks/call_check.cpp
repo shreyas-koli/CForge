@@ -7,6 +7,7 @@
 #include "ast/for_stmt.h"
 #include "ast/if_stmt.h"
 #include "ast/literal_expression.h"
+#include "ast/return_stmt.h"
 #include "ast/unary_expr.h"
 #include "ast/while_stmt.h"
 
@@ -313,6 +314,12 @@ bool CallChecker::checkStatement(const Statement& stmt) {
         if (forStmt->hasPost() && !checkExpression(*forStmt->post())) ok = false;
         if (forStmt->body() && !checkStatement(*forStmt->body())) ok = false;
         return ok;
+    }
+    if (const auto* ret = dynamic_cast<const ReturnStmt*>(&stmt)) {
+        if (ret->hasExpression() && ret->expression()) {
+            return checkExpression(*ret->expression());
+        }
+        return true;
     }
     return true;
 }

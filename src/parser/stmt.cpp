@@ -506,3 +506,47 @@ std::unique_ptr<ContinueStmt> Parser::parseContinueStatement() {
     return std::make_unique<ContinueStmt>(loc);
 }
 
+// =============================================================================
+// parseReturnStatement() — Day 51 Return Statement Parsing
+// =============================================================================
+//
+// Grammar (C99/C17 §6.8.6.4):
+//   jump-statement:
+//       'return' expression? ';'
+//
+std::unique_ptr<ReturnStmt> Parser::parseReturnStatement() {
+    if (isAtEnd() || !check(TokenType::Keyword) || peek().lexeme != "return") {
+        if (!hasError()) {
+            error("Expected 'return'");
+        }
+        return nullptr;
+    }
+
+    Token returnToken = advance(); // consume 'return'
+    SourceLocation loc{returnToken.line, returnToken.column};
+
+    // Check for empty return: 'return;'
+    if (!isAtEnd() && check(TokenType::Punctuation) && peek().lexeme == ";") {
+        advance(); // consume ';'
+        return std::make_unique<ReturnStmt>(nullptr, loc);
+    }
+
+    auto expr = parseExpression();
+    if (!expr) {
+        if (!hasError()) {
+            error("Expected expression after 'return'");
+        }
+        return nullptr;
+    }
+
+    if (isAtEnd() || !check(TokenType::Punctuation) || peek().lexeme != ";") {
+        if (!hasError()) {
+            error("Expected ';' after return statement");
+        }
+        return nullptr;
+    }
+    advance(); // consume ';'
+
+    return std::make_unique<ReturnStmt>(std::move(expr), loc);
+}
+

@@ -29,6 +29,7 @@ add_executable(cforge
     src/ast/for_stmt.cpp
     src/ast/break_stmt.cpp
     src/ast/continue_stmt.cpp
+    src/ast/return_stmt.cpp
     src/ast/expression.cpp
     src/ast/program.cpp
     src/ast/function.cpp
@@ -52,6 +53,7 @@ add_executable(cforge
     src/semantic/checks/redeclaration.cpp
     src/semantic/checks/undeclared.cpp
     src/semantic/checks/call_check.cpp
+    src/semantic/checks/return_check.cpp
     src/semantic/type_checker.cpp
 )
 
@@ -117,6 +119,7 @@ add_executable(cforge_tests
     tests/semantic/test_undeclared.cpp
     tests/semantic/test_type_checker.cpp
     tests/semantic/test_call_check.cpp
+    tests/semantic/test_return_check.cpp
     src/driver/pipeline.cpp
     src/lexer/token.cpp
     src/lexer/lexer.cpp
@@ -129,6 +132,7 @@ add_executable(cforge_tests
     src/ast/for_stmt.cpp
     src/ast/break_stmt.cpp
     src/ast/continue_stmt.cpp
+    src/ast/return_stmt.cpp
     src/ast/expression.cpp
     src/ast/program.cpp
     src/ast/function.cpp
@@ -152,6 +156,7 @@ add_executable(cforge_tests
     src/semantic/checks/redeclaration.cpp
     src/semantic/checks/undeclared.cpp
     src/semantic/checks/call_check.cpp
+    src/semantic/checks/return_check.cpp
     src/semantic/type_checker.cpp
 )
 target_link_libraries(cforge_tests PRIVATE Catch2::Catch2)

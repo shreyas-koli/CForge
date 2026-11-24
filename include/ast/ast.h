@@ -9,6 +9,7 @@
 #include "ast/for_stmt.h"
 #include "ast/break_stmt.h"
 #include "ast/continue_stmt.h"
+#include "ast/return_stmt.h"
 #include "ast/stmt.h"
 #include "ast/expression.h"
 #include "ast/program.h"

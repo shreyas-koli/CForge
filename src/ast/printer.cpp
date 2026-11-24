@@ -14,6 +14,7 @@
 #include "ast/if_stmt.h"
 #include "ast/literal_expression.h"
 #include "ast/program.h"
+#include "ast/return_stmt.h"
 #include "ast/unary_expr.h"
 #include "ast/variable_declaration.h"
 #include "ast/var_decl.h"
@@ -67,6 +68,8 @@ void ASTPrinter::printNode(std::ostream& out, const ASTNode* node, int level) co
         printBreak(out, breakStmt, level);
     } else if (auto* continueStmt = dynamic_cast<const ContinueStmt*>(node)) {
         printContinue(out, continueStmt, level);
+    } else if (auto* retStmt = dynamic_cast<const ReturnStmt*>(node)) {
+        printReturn(out, retStmt, level);
     } else if (auto* bin = dynamic_cast<const BinaryExpr*>(node)) {
         printBinary(out, bin, level);
     } else if (auto* assign = dynamic_cast<const AssignExpr*>(node)) {
@@ -285,6 +288,13 @@ void ASTPrinter::printBreak(std::ostream& out, const BreakStmt* breakStmt, int l
 void ASTPrinter::printContinue(std::ostream& out, const ContinueStmt* contStmt, int level) const {
     (void)contStmt;
     out << makeIndent(level) << "ContinueStmt\n";
+}
+
+void ASTPrinter::printReturn(std::ostream& out, const ReturnStmt* retStmt, int level) const {
+    out << makeIndent(level) << "ReturnStmt\n";
+    if (retStmt && retStmt->hasExpression() && retStmt->expression()) {
+        printNode(out, retStmt->expression(), level + 1);
+    }
 }
 
 std::string printAST(const ASTNode* node, int indentSpaces) {
