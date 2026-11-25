@@ -1,5 +1,6 @@
 #include "parser/parser.h"
 #include "ast/call_expr.h"
+#include "ast/index_expr.h"
 
 // =============================================================================
 // parseExpression() & parseBinaryExpression() — Day 15 & Day 16
@@ -127,6 +128,30 @@ std::unique_ptr<Expression> Parser::parseUnary() {
             advance(); // consume ')'
             SourceLocation loc = expr ? expr->location() : makeLocation(openParen);
             expr = std::make_unique<CallExpr>(std::move(expr), std::move(args), loc);
+        } else if (check(TokenType::Punctuation) && peek().lexeme == "[") {
+            Token openBracket = advance(); // consume '['
+
+            if (check(TokenType::Punctuation) && peek().lexeme == "]") {
+                error("Expected expression between '[' and ']'");
+                return nullptr;
+            }
+
+            auto index = parseExpression();
+            if (!index) {
+                if (!hasError()) {
+                    error("Expected expression after '['");
+                }
+                return nullptr;
+            }
+
+            if (isAtEnd() || !check(TokenType::Punctuation) || peek().lexeme != "]") {
+                error("Expected ']' after index expression");
+                return nullptr;
+            }
+            advance(); // consume ']'
+
+            SourceLocation loc = expr ? expr->location() : makeLocation(openBracket);
+            expr = std::make_unique<IndexExpr>(std::move(expr), std::move(index), loc);
         } else {
             break;
         }

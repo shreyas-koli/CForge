@@ -15,6 +15,7 @@ class BinaryExpr;
 class UnaryExpr;
 class AssignExpr;
 class CallExpr;
+class IndexExpr;
 class ConditionalExpr;
 class CompoundStmt;
 class IfStmt;
@@ -61,6 +62,7 @@ private:
     void printBinary(std::ostream& out, const BinaryExpr* bin, int level) const;
     void printUnary(std::ostream& out, const UnaryExpr* un, int level) const;
     void printCall(std::ostream& out, const CallExpr* call, int level) const;
+    void printIndex(std::ostream& out, const IndexExpr* idx, int level) const;
     void printAssign(std::ostream& out, const AssignExpr* assign, int level) const;
     void printConditional(std::ostream& out, const ConditionalExpr* cond, int level) const;
     void printCompound(std::ostream& out, const CompoundStmt* compound, int level) const;

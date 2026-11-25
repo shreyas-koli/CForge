@@ -6,5 +6,6 @@
 #include "ast/binary_expr.h"
 #include "ast/expression.h"
 #include "ast/identifier_expression.h"
+#include "ast/index_expr.h"
 #include "ast/literal_expression.h"
 #include "ast/unary_expr.h"

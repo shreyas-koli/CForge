@@ -6,6 +6,7 @@
 #include "ast/do_while_stmt.h"
 #include "ast/for_stmt.h"
 #include "ast/if_stmt.h"
+#include "ast/index_expr.h"
 #include "ast/literal_expression.h"
 #include "ast/return_stmt.h"
 #include "ast/unary_expr.h"
@@ -455,6 +456,12 @@ bool CallChecker::checkExpression(const Expression& expr) {
         if (cond->condition() && !checkExpression(*cond->condition())) ok = false;
         if (cond->thenExpr() && !checkExpression(*cond->thenExpr())) ok = false;
         if (cond->elseExpr() && !checkExpression(*cond->elseExpr())) ok = false;
+        return ok;
+    }
+    if (const auto* idx = dynamic_cast<const IndexExpr*>(&expr)) {
+        bool ok = true;
+        if (idx->base() && !checkExpression(*idx->base())) ok = false;
+        if (idx->index() && !checkExpression(*idx->index())) ok = false;
         return ok;
     }
     return true;

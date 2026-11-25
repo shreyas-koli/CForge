@@ -1,5 +1,6 @@
 #include "semantic/checks/undeclared.h"
 #include "ast/call_expr.h"
+#include "ast/index_expr.h"
 
 // =============================================================================
 // UndeclaredChecker Implementation (Day 48)
@@ -236,6 +237,16 @@ bool UndeclaredChecker::checkExpression(const Expression& expr) {
     }
     if (const auto* call = dynamic_cast<const CallExpr*>(&expr)) {
         return checkCallExpr(*call);
+    }
+    if (const auto* idx = dynamic_cast<const IndexExpr*>(&expr)) {
+        bool ok = true;
+        if (idx->base() && !checkExpression(*idx->base())) {
+            ok = false;
+        }
+        if (idx->index() && !checkExpression(*idx->index())) {
+            ok = false;
+        }
+        return ok;
     }
     // LiteralExpression contains no identifiers
     return true;

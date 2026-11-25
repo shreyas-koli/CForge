@@ -12,6 +12,7 @@
 #include "ast/function.h"
 #include "ast/identifier_expression.h"
 #include "ast/if_stmt.h"
+#include "ast/index_expr.h"
 #include "ast/literal_expression.h"
 #include "ast/program.h"
 #include "ast/return_stmt.h"
@@ -80,6 +81,8 @@ void ASTPrinter::printNode(std::ostream& out, const ASTNode* node, int level) co
         printUnary(out, un, level);
     } else if (auto* call = dynamic_cast<const CallExpr*>(node)) {
         printCall(out, call, level);
+    } else if (auto* idx = dynamic_cast<const IndexExpr*>(node)) {
+        printIndex(out, idx, level);
     } else if (auto* lit = dynamic_cast<const LiteralExpression*>(node)) {
         printLiteral(out, lit, level);
     } else if (auto* id = dynamic_cast<const IdentifierExpression*>(node)) {
@@ -205,6 +208,14 @@ void ASTPrinter::printCall(std::ostream& out, const CallExpr* call, int level) c
             printNode(out, call->argument(i), level + 2);
         }
     }
+}
+
+void ASTPrinter::printIndex(std::ostream& out, const IndexExpr* idx, int level) const {
+    out << makeIndent(level) << "IndexExpr\n";
+    out << makeIndent(level + 1) << "Base:\n";
+    printNode(out, idx->base(), level + 2);
+    out << makeIndent(level + 1) << "Index:\n";
+    printNode(out, idx->index(), level + 2);
 }
 
 void ASTPrinter::printConditional(std::ostream& out, const ConditionalExpr* cond, int level) const {

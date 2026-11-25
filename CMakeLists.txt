@@ -38,6 +38,7 @@ add_executable(cforge
     src/ast/literal_expression.cpp
     src/ast/identifier_expression.cpp
     src/ast/call_expr.cpp
+    src/ast/index_expr.cpp
     src/ast/assign_expr.cpp
     src/ast/conditional_expr.cpp
     src/ast/binary_expr.cpp
@@ -110,6 +111,7 @@ add_executable(cforge_tests
     tests/types/test_array_type.cpp
     tests/parser/test_variable_declaration.cpp
     tests/parser/test_array_declaration.cpp
+    tests/parser/test_array_indexing.cpp
     tests/parser/test_const_qualifier.cpp
     tests/parser/test_function_parameter_types.cpp
     tests/parser/test_function_return_types.cpp
@@ -146,6 +148,7 @@ add_executable(cforge_tests
     src/ast/literal_expression.cpp
     src/ast/identifier_expression.cpp
     src/ast/call_expr.cpp
+    src/ast/index_expr.cpp
     src/ast/assign_expr.cpp
     src/ast/conditional_expr.cpp
     src/ast/binary_expr.cpp
