@@ -414,8 +414,70 @@ std::unique_ptr<VarDecl> Parser::parseVarDecl() {
     Token nameTok = advance();
     std::string name = nameTok.lexeme;
 
+    // Fixed-size array declarator: '[' size ']' (Day 54)
+    if (!isAtEnd() && check(TokenType::Punctuation) && peek().lexeme == "[") {
+        advance(); // consume '['
+
+        if (isAtEnd()) {
+            error("Expected array size before end of input");
+            return nullptr;
+        }
+
+        // Empty array size: '[]'
+        if (check(TokenType::Punctuation) && peek().lexeme == "]") {
+            error("Expected array size between '[' and ']'");
+            return nullptr;
+        }
+
+        // Negative array size: '[-5]'
+        if (check(TokenType::Operator) && peek().lexeme == "-") {
+            advance(); // consume '-'
+            error("Array size must be positive");
+            return nullptr;
+        }
+
+        // Identifier / variable-length array: '[size]'
+        if (check(TokenType::Identifier)) {
+            error("Variable-length arrays are not supported");
+            return nullptr;
+        }
+
+        // Must be an integer literal
+        if (!check(TokenType::Integer)) {
+            error("Expected integer constant for array size");
+            return nullptr;
+        }
+
+        Token sizeTok = advance();
+        char* endPtr = nullptr;
+        unsigned long long parsedSize = std::strtoull(sizeTok.lexeme.c_str(), &endPtr, 0);
+        if (parsedSize == 0) {
+            error("Array size must be greater than zero");
+            return nullptr;
+        }
+
+        // Expect closing ']'
+        if (isAtEnd() || !check(TokenType::Punctuation) || peek().lexeme != "]") {
+            error("Expected ']' after array size");
+            return nullptr;
+        }
+        advance(); // consume ']'
+
+        // Multidimensional arrays rejected for this milestone
+        if (!isAtEnd() && check(TokenType::Punctuation) && peek().lexeme == "[") {
+            error("Multidimensional arrays are not supported");
+            return nullptr;
+        }
+
+        type = std::make_shared<ArrayType>(std::move(type), static_cast<std::size_t>(parsedSize));
+    }
+
     std::unique_ptr<Expression> initializer = nullptr;
     if (!isAtEnd() && check(TokenType::Operator) && peek().lexeme == "=") {
+        if (type && type->isArray()) {
+            error("Array initialization is not supported");
+            return nullptr;
+        }
         advance(); // consume '='
 
         if (isAtEnd() || (check(TokenType::Punctuation) && peek().lexeme == ";")) {

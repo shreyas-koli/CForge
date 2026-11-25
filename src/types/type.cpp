@@ -216,6 +216,7 @@ const char* typeKindName(TypeKind kind) {
         case TypeKind::Int:    return "int";
         case TypeKind::Float:  return "float";
         case TypeKind::Double: return "double";
+        case TypeKind::Array:  return "array";
         default:               return "<unknown>";
     }
 }
@@ -292,4 +293,81 @@ std::shared_ptr<Type> primitiveTypeFromToken(const Token& token, bool isConst, b
         return getPrimitiveType(kind, isConst, isVolatile);
     }
     return nullptr;
+}
+
+// =============================================================================
+// ArrayType Implementation (Day 54)
+// =============================================================================
+
+ArrayType::ArrayType(std::shared_ptr<Type> elementType, std::size_t size)
+    : Type(TypeKind::Array,
+           elementType ? elementType->isConst() : false,
+           elementType ? elementType->isVolatile() : false)
+    , m_elementType(std::move(elementType))
+    , m_size(size) {
+    if (m_elementType) {
+        m_cachedString = m_elementType->toString() + "[" + std::to_string(m_size) + "]";
+    } else {
+        m_cachedString = "<unknown>[" + std::to_string(m_size) + "]";
+    }
+}
+
+std::size_t ArrayType::sizeInBytes() const noexcept {
+    return m_elementType ? m_size * m_elementType->size() : 0;
+}
+
+std::size_t ArrayType::size() const {
+    return sizeInBytes();
+}
+
+std::string ArrayType::toString() const {
+    return m_cachedString;
+}
+
+const char* ArrayType::name() const {
+    return m_cachedString.c_str();
+}
+
+bool ArrayType::equals(const Type& other) const {
+    if (this == &other) {
+        return true;
+    }
+    if (other.kind() != TypeKind::Array) {
+        return false;
+    }
+    const auto* otherArr = dynamic_cast<const ArrayType*>(&other);
+    if (!otherArr) {
+        return false;
+    }
+    if (m_size != otherArr->m_size) {
+        return false;
+    }
+    if (isConst() != otherArr->isConst() || isVolatile() != otherArr->isVolatile()) {
+        return false;
+    }
+    if (!m_elementType && !otherArr->m_elementType) {
+        return true;
+    }
+    if (!m_elementType || !otherArr->m_elementType) {
+        return false;
+    }
+    return m_elementType->equals(*otherArr->m_elementType);
+}
+
+std::shared_ptr<Type> ArrayType::withConst(bool isConst) const {
+    if (!m_elementType) {
+        return nullptr;
+    }
+    return std::make_shared<ArrayType>(m_elementType->withConst(isConst), m_size);
+}
+
+std::shared_ptr<Type> ArrayType::withVolatile(bool isVolatile) const {
+    if (!m_elementType) {
+        return nullptr;
+    }
+    return std::make_shared<ArrayType>(m_elementType->withVolatile(isVolatile), m_size);
+}
+
+std::shared_ptr<ArrayType> Type::getArray(std::shared_ptr<Type> elementType, std::size_t size) {
+    return std::make_shared<ArrayType>(std::move(elementType), size);
 }

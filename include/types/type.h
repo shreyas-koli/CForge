@@ -21,9 +21,9 @@ enum class TypeKind {
     Int,
     Float,
     Double,
+    Array,
     // Future kinds:
     // Pointer,
-    // Array,
     // Function,
     // Struct,
     // Union,
@@ -38,6 +38,8 @@ enum class TypeKind {
 // queries, stringification, structural equality, and canonical factory
 // methods for primitive types. Supports type qualifiers (const).
 //
+class ArrayType;
+
 class Type {
 public:
     explicit Type(TypeKind kind, bool isConst = false, bool isVolatile = false);
@@ -57,6 +59,7 @@ public:
     bool isInt() const { return m_kind == TypeKind::Int; }
     bool isFloat() const { return m_kind == TypeKind::Float; }
     bool isDouble() const { return m_kind == TypeKind::Double; }
+    bool isArray() const { return m_kind == TypeKind::Array; }
     bool isUnknown() const { return m_kind == TypeKind::Unknown; }
 
     // Category queries
@@ -84,6 +87,9 @@ public:
     static std::shared_ptr<Type> getInt(bool isConst = false, bool isVolatile = false);
     static std::shared_ptr<Type> getFloat(bool isConst = false, bool isVolatile = false);
     static std::shared_ptr<Type> getDouble(bool isConst = false, bool isVolatile = false);
+
+    // Array type factory (Day 54)
+    static std::shared_ptr<ArrayType> getArray(std::shared_ptr<Type> elementType, std::size_t size);
 
     // Factory by TypeKind or keyword/token
     static std::shared_ptr<Type> getPrimitive(TypeKind kind, bool isConst = false, bool isVolatile = false);
@@ -117,6 +123,48 @@ public:
     bool equals(const Type& other) const override;
     std::shared_ptr<Type> withConst(bool isConst = true) const override;
     std::shared_ptr<Type> withVolatile(bool isVolatile = true) const override;
+};
+
+// =============================================================================
+// ArrayType — Concrete Class for C Fixed-Size Array Types (Day 54)
+// =============================================================================
+class ArrayType : public Type {
+public:
+    ArrayType(std::shared_ptr<Type> elementType, std::size_t size);
+    ~ArrayType() override = default;
+
+    // Element type accessors
+    const Type* elementType() const noexcept { return m_elementType.get(); }
+    const std::shared_ptr<Type>& elementTypeShared() const noexcept { return m_elementType; }
+    const std::shared_ptr<Type>& getElementType() const noexcept { return m_elementType; }
+
+    // Array dimension / element count accessors
+    std::size_t arraySize() const noexcept { return m_size; }
+    std::size_t getArraySize() const noexcept { return m_size; }
+    std::size_t elementCount() const noexcept { return m_size; }
+    std::size_t getElementCount() const noexcept { return m_size; }
+    std::size_t numElements() const noexcept { return m_size; }
+    std::size_t length() const noexcept { return m_size; }
+
+    // Total byte size (element size * dimension)
+    std::size_t sizeInBytes() const noexcept;
+    std::size_t size() const override;
+
+    // String representations
+    std::string toString() const override;
+    const char* name() const override;
+
+    // Structural equivalence comparison
+    bool equals(const Type& other) const override;
+
+    // Qualifier transformation helpers
+    std::shared_ptr<Type> withConst(bool isConst = true) const override;
+    std::shared_ptr<Type> withVolatile(bool isVolatile = true) const override;
+
+private:
+    std::shared_ptr<Type> m_elementType;
+    std::size_t m_size{0};
+    std::string m_cachedString;
 };
 
 // =============================================================================

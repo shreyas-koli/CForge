@@ -33,6 +33,9 @@ ConversionKind getConversionKind(const Type& source, const Type& destination) {
     // Identity: source and destination types have identical underlying kinds
     // (const qualification does not alter underlying numeric category)
     if (srcKind == dstKind) {
+        if (srcKind == TypeKind::Array) {
+            return ConversionKind::Invalid;
+        }
         return ConversionKind::Identity;
     }
 
