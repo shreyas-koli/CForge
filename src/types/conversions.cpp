@@ -36,6 +36,11 @@ ConversionKind getConversionKind(const Type& source, const Type& destination) {
         if (srcKind == TypeKind::Array) {
             return ConversionKind::Invalid;
         }
+        if (srcKind == TypeKind::Pointer) {
+            return source.equals(destination)
+                ? ConversionKind::Identity
+                : ConversionKind::Invalid;
+        }
         return ConversionKind::Identity;
     }
 

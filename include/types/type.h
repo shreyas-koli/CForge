@@ -22,8 +22,8 @@ enum class TypeKind {
     Float,
     Double,
     Array,
+    Pointer,
     // Future kinds:
-    // Pointer,
     // Function,
     // Struct,
     // Union,
@@ -39,6 +39,7 @@ enum class TypeKind {
 // methods for primitive types. Supports type qualifiers (const).
 //
 class ArrayType;
+class PointerType;
 
 class Type {
 public:
@@ -60,6 +61,7 @@ public:
     bool isFloat() const { return m_kind == TypeKind::Float; }
     bool isDouble() const { return m_kind == TypeKind::Double; }
     bool isArray() const { return m_kind == TypeKind::Array; }
+    bool isPointer() const { return m_kind == TypeKind::Pointer; }
     bool isUnknown() const { return m_kind == TypeKind::Unknown; }
 
     // Category queries
@@ -90,6 +92,11 @@ public:
 
     // Array type factory (Day 54)
     static std::shared_ptr<ArrayType> getArray(std::shared_ptr<Type> elementType, std::size_t size);
+
+    // Pointer type factory (Day 57)
+    static std::shared_ptr<PointerType> getPointer(std::shared_ptr<Type> pointeeType,
+                                                   bool isConst = false,
+                                                   bool isVolatile = false);
 
     // Factory by TypeKind or keyword/token
     static std::shared_ptr<Type> getPrimitive(TypeKind kind, bool isConst = false, bool isVolatile = false);
@@ -164,6 +171,41 @@ public:
 private:
     std::shared_ptr<Type> m_elementType;
     std::size_t m_size{0};
+    std::string m_cachedString;
+};
+
+// =============================================================================
+// PointerType — Concrete Class for C Pointer Types (Day 57)
+// =============================================================================
+class PointerType : public Type {
+public:
+    explicit PointerType(std::shared_ptr<Type> pointeeType,
+                         bool isConst = false,
+                         bool isVolatile = false);
+    ~PointerType() override = default;
+
+    // Pointee type accessors
+    const Type* pointeeType() const noexcept { return m_pointeeType.get(); }
+    const std::shared_ptr<Type>& pointeeTypeShared() const noexcept { return m_pointeeType; }
+    const std::shared_ptr<Type>& getPointeeType() const noexcept { return m_pointeeType; }
+
+    // Pointer size in bytes (target pointer width)
+    std::size_t sizeInBytes() const noexcept;
+    std::size_t size() const override;
+
+    // String representations
+    std::string toString() const override;
+    const char* name() const override;
+
+    // Structural equivalence comparison
+    bool equals(const Type& other) const override;
+
+    // Qualifier transformation helpers (qualify the pointer itself, not pointee)
+    std::shared_ptr<Type> withConst(bool isConst = true) const override;
+    std::shared_ptr<Type> withVolatile(bool isVolatile = true) const override;
+
+private:
+    std::shared_ptr<Type> m_pointeeType;
     std::string m_cachedString;
 };
 

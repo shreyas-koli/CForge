@@ -409,6 +409,23 @@ std::unique_ptr<VarDecl> Parser::parseVarDecl() {
 
     auto type = getPrimitiveType(specs.typeKind, specs.isConst, specs.isVolatile);
 
+    // Pointer declarators: zero or more '*' with optional cv-qualifiers (Day 57)
+    while (!isAtEnd() && check(TokenType::Operator) && peek().lexeme == "*") {
+        advance(); // consume '*'
+        bool ptrConst = false;
+        bool ptrVolatile = false;
+        while (!isAtEnd() && check(TokenType::Keyword) &&
+               (peek().lexeme == "const" || peek().lexeme == "volatile")) {
+            if (peek().lexeme == "const") {
+                ptrConst = true;
+            } else {
+                ptrVolatile = true;
+            }
+            advance();
+        }
+        type = std::make_shared<PointerType>(std::move(type), ptrConst, ptrVolatile);
+    }
+
     if (isAtEnd() || peek().type != TokenType::Identifier) {
         error("Expected identifier after type specifier");
         return nullptr;

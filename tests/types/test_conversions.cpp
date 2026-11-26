@@ -366,3 +366,41 @@ TEST_CASE("TypeConversions: String representations and names", "[types][conversi
     CHECK(conversionKindToString(ConversionKind::Implicit) == "Implicit");
     CHECK(conversionKindToString(ConversionKind::Invalid) == "Invalid");
 }
+
+TEST_CASE("TypeConversions: Pointer type conversion classification", "[types][conversions][pointer]") {
+    auto intPtrA  = Type::getPointer(Type::getInt());
+    auto intPtrB  = Type::getPointer(Type::getInt());
+    auto charPtr  = Type::getPointer(Type::getChar());
+    auto intPtr2A = Type::getPointer(intPtrA);
+    auto intPtr2B = Type::getPointer(intPtrB);
+    auto charPtr2 = Type::getPointer(charPtr);
+
+    SECTION("Identical pointer types are Identity and implicitly convertible") {
+        CHECK(getConversionKind(*intPtrA, *intPtrB) == ConversionKind::Identity);
+        CHECK(isIdentityConversion(*intPtrA, *intPtrB));
+        CHECK(isImplicitlyConvertible(*intPtrA, *intPtrB));
+        CHECK_FALSE(isStrictlyImplicit(*intPtrA, *intPtrB));
+
+        CHECK(getConversionKind(*intPtr2A, *intPtr2B) == ConversionKind::Identity);
+        CHECK(isIdentityConversion(*intPtr2A, *intPtr2B));
+        CHECK(isImplicitlyConvertible(*intPtr2A, *intPtr2B));
+    }
+
+    SECTION("Different pointee types: int* -> char* is Invalid") {
+        CHECK(getConversionKind(*intPtrA, *charPtr) == ConversionKind::Invalid);
+        CHECK_FALSE(isIdentityConversion(*intPtrA, *charPtr));
+        CHECK_FALSE(isImplicitlyConvertible(*intPtrA, *charPtr));
+    }
+
+    SECTION("Different indirection levels: int* -> int** is Invalid") {
+        CHECK(getConversionKind(*intPtrA, *intPtr2A) == ConversionKind::Invalid);
+        CHECK_FALSE(isIdentityConversion(*intPtrA, *intPtr2A));
+        CHECK_FALSE(isImplicitlyConvertible(*intPtrA, *intPtr2A));
+    }
+
+    SECTION("Different multi-level pointee types: int** -> char** is Invalid") {
+        CHECK(getConversionKind(*intPtr2A, *charPtr2) == ConversionKind::Invalid);
+        CHECK_FALSE(isIdentityConversion(*intPtr2A, *charPtr2));
+        CHECK_FALSE(isImplicitlyConvertible(*intPtr2A, *charPtr2));
+    }
+}

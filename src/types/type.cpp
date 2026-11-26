@@ -215,9 +215,10 @@ const char* typeKindName(TypeKind kind) {
         case TypeKind::Char:   return "char";
         case TypeKind::Int:    return "int";
         case TypeKind::Float:  return "float";
-        case TypeKind::Double: return "double";
-        case TypeKind::Array:  return "array";
-        default:               return "<unknown>";
+        case TypeKind::Double:  return "double";
+        case TypeKind::Array:   return "array";
+        case TypeKind::Pointer: return "pointer";
+        default:                return "<unknown>";
     }
 }
 
@@ -380,4 +381,75 @@ std::shared_ptr<Type> ArrayType::withVolatile(bool isVolatile) const {
 
 std::shared_ptr<ArrayType> Type::getArray(std::shared_ptr<Type> elementType, std::size_t size) {
     return std::make_shared<ArrayType>(std::move(elementType), size);
+}
+
+// =============================================================================
+// PointerType Implementation (Day 57)
+// =============================================================================
+
+PointerType::PointerType(std::shared_ptr<Type> pointeeType, bool isConst, bool isVolatile)
+    : Type(TypeKind::Pointer, isConst, isVolatile)
+    , m_pointeeType(std::move(pointeeType)) {
+    std::string base = m_pointeeType ? m_pointeeType->toString() : "<unknown>";
+    m_cachedString = base + "*";
+    if (isConst && isVolatile) {
+        m_cachedString += " const volatile";
+    } else if (isConst) {
+        m_cachedString += " const";
+    } else if (isVolatile) {
+        m_cachedString += " volatile";
+    }
+}
+
+std::size_t PointerType::sizeInBytes() const noexcept {
+    return sizeof(void*);
+}
+
+std::size_t PointerType::size() const {
+    return sizeInBytes();
+}
+
+std::string PointerType::toString() const {
+    return m_cachedString;
+}
+
+const char* PointerType::name() const {
+    return m_cachedString.c_str();
+}
+
+bool PointerType::equals(const Type& other) const {
+    if (this == &other) {
+        return true;
+    }
+    if (other.kind() != TypeKind::Pointer) {
+        return false;
+    }
+    const auto* otherPtr = dynamic_cast<const PointerType*>(&other);
+    if (!otherPtr) {
+        return false;
+    }
+    if (isConst() != otherPtr->isConst() || isVolatile() != otherPtr->isVolatile()) {
+        return false;
+    }
+    if (!m_pointeeType && !otherPtr->m_pointeeType) {
+        return true;
+    }
+    if (!m_pointeeType || !otherPtr->m_pointeeType) {
+        return false;
+    }
+    return m_pointeeType->equals(*otherPtr->m_pointeeType);
+}
+
+std::shared_ptr<Type> PointerType::withConst(bool isConst) const {
+    return std::make_shared<PointerType>(m_pointeeType, isConst, isVolatile());
+}
+
+std::shared_ptr<Type> PointerType::withVolatile(bool isVolatile) const {
+    return std::make_shared<PointerType>(m_pointeeType, isConst(), isVolatile);
+}
+
+std::shared_ptr<PointerType> Type::getPointer(std::shared_ptr<Type> pointeeType,
+                                              bool isConst,
+                                              bool isVolatile) {
+    return std::make_shared<PointerType>(std::move(pointeeType), isConst, isVolatile);
 }
