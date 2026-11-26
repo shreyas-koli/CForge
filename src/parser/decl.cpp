@@ -6,6 +6,9 @@
 #include "ast/storage_class.h"
 #include "types/type.h"
 
+#include <cstdlib>
+#include <vector>
+
 // =============================================================================
 // Helper Functions for Declaration Parsing (Day 18, 36, 38, 42)
 // =============================================================================
@@ -414,62 +417,71 @@ std::unique_ptr<VarDecl> Parser::parseVarDecl() {
     Token nameTok = advance();
     std::string name = nameTok.lexeme;
 
-    // Fixed-size array declarator: '[' size ']' (Day 54)
+    // Array declarator: one or more consecutive '[' size ']' dimensions (Day 54 / Day 56)
     if (!isAtEnd() && check(TokenType::Punctuation) && peek().lexeme == "[") {
-        advance(); // consume '['
+        // Collect all dimension sizes in declaration order: int a[D0][D1][D2]
+        std::vector<std::size_t> dims;
 
-        if (isAtEnd()) {
-            error("Expected array size before end of input");
-            return nullptr;
+        while (!isAtEnd() && check(TokenType::Punctuation) && peek().lexeme == "[") {
+            advance(); // consume '['
+
+            if (isAtEnd()) {
+                error("Expected array size before end of input");
+                return nullptr;
+            }
+
+            // Empty array size: '[]'
+            if (check(TokenType::Punctuation) && peek().lexeme == "]") {
+                error("Expected array size between '[' and ']'");
+                return nullptr;
+            }
+
+            // Negative array size: '[-5]'
+            if (check(TokenType::Operator) && peek().lexeme == "-") {
+                advance(); // consume '-'
+                error("Array size must be positive");
+                return nullptr;
+            }
+
+            // Identifier / variable-length array: '[size]'
+            if (check(TokenType::Identifier)) {
+                error("Variable-length arrays are not supported");
+                return nullptr;
+            }
+
+            // Must be an integer literal
+            if (!check(TokenType::Integer)) {
+                error("Expected integer constant for array size");
+                return nullptr;
+            }
+
+            Token sizeTok = advance();
+            char* endPtr = nullptr;
+            unsigned long long parsedSize = std::strtoull(sizeTok.lexeme.c_str(), &endPtr, 0);
+            if (parsedSize == 0) {
+                error("Array size must be greater than zero");
+                return nullptr;
+            }
+
+            // Expect closing ']'
+            if (isAtEnd() || !check(TokenType::Punctuation) || peek().lexeme != "]") {
+                error("Expected ']' after array size");
+                return nullptr;
+            }
+            advance(); // consume ']'
+
+            dims.push_back(static_cast<std::size_t>(parsedSize));
         }
 
-        // Empty array size: '[]'
-        if (check(TokenType::Punctuation) && peek().lexeme == "]") {
-            error("Expected array size between '[' and ']'");
-            return nullptr;
+        // Construct nested ArrayType from innermost dimension outward so that
+        // the outermost dimension (dims[0]) becomes the outermost ArrayType.
+        // For int a[3][4]: dims = {3, 4}
+        //   Step 1: ArrayType(int,   4)         <- innermost
+        //   Step 2: ArrayType(above, 3)         <- outermost
+        // Result: ArrayType(size=3, elem=ArrayType(size=4, elem=int))
+        for (auto it = dims.rbegin(); it != dims.rend(); ++it) {
+            type = std::make_shared<ArrayType>(std::move(type), *it);
         }
-
-        // Negative array size: '[-5]'
-        if (check(TokenType::Operator) && peek().lexeme == "-") {
-            advance(); // consume '-'
-            error("Array size must be positive");
-            return nullptr;
-        }
-
-        // Identifier / variable-length array: '[size]'
-        if (check(TokenType::Identifier)) {
-            error("Variable-length arrays are not supported");
-            return nullptr;
-        }
-
-        // Must be an integer literal
-        if (!check(TokenType::Integer)) {
-            error("Expected integer constant for array size");
-            return nullptr;
-        }
-
-        Token sizeTok = advance();
-        char* endPtr = nullptr;
-        unsigned long long parsedSize = std::strtoull(sizeTok.lexeme.c_str(), &endPtr, 0);
-        if (parsedSize == 0) {
-            error("Array size must be greater than zero");
-            return nullptr;
-        }
-
-        // Expect closing ']'
-        if (isAtEnd() || !check(TokenType::Punctuation) || peek().lexeme != "]") {
-            error("Expected ']' after array size");
-            return nullptr;
-        }
-        advance(); // consume ']'
-
-        // Multidimensional arrays rejected for this milestone
-        if (!isAtEnd() && check(TokenType::Punctuation) && peek().lexeme == "[") {
-            error("Multidimensional arrays are not supported");
-            return nullptr;
-        }
-
-        type = std::make_shared<ArrayType>(std::move(type), static_cast<std::size_t>(parsedSize));
     }
 
     std::unique_ptr<Expression> initializer = nullptr;

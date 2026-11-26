@@ -112,6 +112,7 @@ add_executable(cforge_tests
     tests/parser/test_variable_declaration.cpp
     tests/parser/test_array_declaration.cpp
     tests/parser/test_array_indexing.cpp
+    tests/parser/test_multidimensional_arrays.cpp
     tests/parser/test_const_qualifier.cpp
     tests/parser/test_function_parameter_types.cpp
     tests/parser/test_function_return_types.cpp

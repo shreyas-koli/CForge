@@ -1,22 +1,14 @@
-int calculate(int count, float factor);
-
-int calculate(int count, float factor) {
-    const int base = 10;
-
-    {
-        int base = 20;
-        int temporary = base + count;
-    }
-
-    float result = count * factor;
-    return count + base;
-}
+int matrix[3][4];
+int cube[2][3][4];
 
 int main(void) {
-    int count = 5;
-    // float factor = 2.5;
+    int x = 10;
 
-    // int result = calculate(count, factor);
+    matrix[0][0];
+    matrix[1][2];
+    matrix[x][x + 1];
+
+    cube[0][1][2];
 
     return 0;
 }

@@ -305,10 +305,20 @@ ArrayType::ArrayType(std::shared_ptr<Type> elementType, std::size_t size)
            elementType ? elementType->isVolatile() : false)
     , m_elementType(std::move(elementType))
     , m_size(size) {
-    if (m_elementType) {
-        m_cachedString = m_elementType->toString() + "[" + std::to_string(m_size) + "]";
+    // Build toString() with correct dimension order: outermost dimension first.
+    // Walk the chain of nested ArrayType elements to collect all dimensions in
+    // declaration order, then format as: baseType[d0][d1]...[dN].
+    std::string dims = "[" + std::to_string(m_size) + "]";
+    const Type* inner = m_elementType.get();
+    while (inner && inner->isArray()) {
+        const auto* innerArr = static_cast<const ArrayType*>(inner);
+        dims += "[" + std::to_string(innerArr->arraySize()) + "]";
+        inner = innerArr->elementType();
+    }
+    if (inner) {
+        m_cachedString = inner->toString() + dims;
     } else {
-        m_cachedString = "<unknown>[" + std::to_string(m_size) + "]";
+        m_cachedString = "<unknown>" + dims;
     }
 }
 

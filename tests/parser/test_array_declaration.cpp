@@ -316,14 +316,6 @@ TEST_CASE("ArrayDecl: Invalid array declarations rejected cleanly", "[parser][de
         CHECK(parser.errorMessage().find("Expected integer constant") != std::string::npos);
     }
 
-    SECTION("Multidimensional array: 'int a[10][20];' is rejected") {
-        Parser parser = makeParser("int a[10][20];");
-        auto decl = parser.parseVarDecl();
-        CHECK(decl == nullptr);
-        CHECK(parser.hasError());
-        CHECK(parser.errorMessage().find("Multidimensional arrays are not supported") != std::string::npos);
-    }
-
     SECTION("Array initialization: 'int a[10] = 5;' is rejected in this milestone") {
         Parser parser = makeParser("int a[10] = 5;");
         auto decl = parser.parseVarDecl();
