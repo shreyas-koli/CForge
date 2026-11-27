@@ -58,16 +58,17 @@ static bool isPrefixUnaryOperator(const Token& tok) {
     }
     return tok.lexeme == "-" || tok.lexeme == "+" ||
            tok.lexeme == "!" || tok.lexeme == "~" ||
-           tok.lexeme == "++" || tok.lexeme == "--";
+           tok.lexeme == "++" || tok.lexeme == "--" ||
+           tok.lexeme == "&";
 }
 
 // =============================================================================
-// parseUnary() — Day 16 Unary Expressions
+// parseUnary() — Day 16 Unary Expressions & Day 58 Address-Of
 // =============================================================================
 //
 // Grammar:
 //   unary-expression:
-//       ('+' | '-' | '!' | '~' | '++' | '--') unary-expression
+//       ('+' | '-' | '!' | '~' | '++' | '--' | '&') unary-expression
 //       primary-expression
 //
 // When a prefix unary operator is found, consumes it and recursively calls

@@ -317,6 +317,15 @@ std::shared_ptr<Type> TypeChecker::inferUnary(const UnaryExpr& unary) {
         return Type::getPrimitive(operandType->kind());
     }
 
+    // 5. Address-of operator (&) — Day 58
+    if (op == "&") {
+        if (!dynamic_cast<const IdentifierExpression*>(unary.operand())) {
+            reportError("lvalue required as unary '&' operand", unary.location());
+            return nullptr;
+        }
+        return Type::getPointer(operandType);
+    }
+
     reportError("unsupported unary operator '" + op + "'", unary.location());
     return nullptr;
 }

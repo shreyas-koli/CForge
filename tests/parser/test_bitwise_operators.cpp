@@ -798,20 +798,20 @@ TEST_CASE("Bitwise and Shift Errors: missing operands", "[parser][bitwise][error
         CHECK(parser.errorMessage() == "Expected expression after '&'");
     }
 
-    SECTION("consecutive operators without operand: 'a + & b'") {
-        Parser parser = makeParser("a + & b");
+    SECTION("consecutive operators without operand: 'a + ^ b'") {
+        Parser parser = makeParser("a + ^ b");
         auto expr = parser.parseExpression();
         CHECK(expr == nullptr);
         CHECK(parser.hasError());
         CHECK(parser.errorMessage() == "Expected expression after '+'");
     }
 
-    SECTION("missing left operand: '& a'") {
-        Parser parser = makeParser("& a");
+    SECTION("missing left operand: '^ a'") {
+        Parser parser = makeParser("^ a");
         auto expr = parser.parseExpression();
         CHECK(expr == nullptr);
         CHECK_FALSE(parser.isAtEnd());
-        CHECK(parser.peek().lexeme == "&");
+        CHECK(parser.peek().lexeme == "^");
     }
 
     SECTION("missing left operand: '<< a'") {
